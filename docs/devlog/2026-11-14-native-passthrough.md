@@ -19,6 +19,10 @@ Unity's Editor log showed that the scene metadata contained a 33-character GUID,
 
 If the **Run Device** list stays on **Default device**, close Meta Quest Developer Hub and click **Refresh**. The Unity log showed its Android SDK's ADB server conflicting with Developer Hub's bundled ADB.
 
+## OpenXR build validation fix
+
+Unity imported the corrected passthrough scene, then stopped the build because the Android **Meta Quest: Camera (Passthrough)** feature requires **Meta Quest: Session**. Enabled both features in the Android OpenXR settings. The input polling and Thin Link Time Optimization messages are optional. Rebuild and verify the passthrough scene on the headset.
+
 ## Reopen the installed app from Windows
 
 The first APK is installed and its launch activity was resolved over ADB. If **Unknown Sources** is missing, connect the Quest by USB and run the following in Windows PowerShell. This starts the existing build.
