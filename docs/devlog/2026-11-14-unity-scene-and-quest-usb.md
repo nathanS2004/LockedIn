@@ -38,6 +38,8 @@ Created a Meta developer team and confirmed that the developer account shows as 
 
 The signup redirect persisted after signing out and back in and reinstalling the phone app. Connecting over USB and trying the Windows Mixed Reality Link shortcut did not display a QR code. That shortcut opens Windows desktop pairing. The next setup attempt is Meta VR Developer Hub's **Device Manager → Set Up New Device** flow over Bluetooth, followed by USB debugging authorization. [Meta VR Developer Hub setup guide](https://developers.meta.com/vr/documentation/unity/ts-mqdh-device-setup/)
 
+Meta VR Developer Hub discovered the Quest 3, then stopped at its account pairing check. The local Developer Hub log recorded `ACCOUNT_MISMATCH`. Compare the primary headset account with the account signed into Developer Hub and the Developer Dashboard. If they match and the error persists, report both the mobile signup redirect and the desktop pairing error to Meta Developer Support.
+
 ## Next milestone
 
 Enable Developer Mode and USB debugging on the Quest and confirm it appears in ADB from a Windows terminal. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset. Device detection and headset launch are still pending.
