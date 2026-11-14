@@ -1,0 +1,25 @@
+# Unity-generated state and local editor settings
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Local builds, IDE output, and signing material
+/[Bb]uild/
+/[Bb]uilds/
+/.vs/
+/.idea/
+/.vscode/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.apk
+*.aab
+*.keystore
+*.jks
+.env
+.env.*
