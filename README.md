@@ -14,5 +14,6 @@ Unity 6.6 may display a deprecation warning for the Built-In Render Pipeline use
 
 - [2026-11-14 — Unity scene and Quest 3 USB setup](docs/devlog/2026-11-14-unity-scene-and-quest-usb.md)
 - [2026-11-14 — First Quest 3 launch](docs/devlog/2026-11-14-first-quest-launch.md)
+- [2026-11-14 — Native passthrough prototype](docs/devlog/2026-11-14-native-passthrough.md)
 
 Each milestone PR should document the steps taken, what was verified, and the next step. Record whether validation happened in Unity's Game tab or on the headset.

@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/LockedInPassthrough.unity
+    guid: 26365d4b14bd4ec98d48efb347a482dda
+  - enabled: 1
     path: Assets/Scenes/FocusLensDemo.unity
     guid: cac7f237d9af49d89af347a84aab581a
   m_configObjects:
