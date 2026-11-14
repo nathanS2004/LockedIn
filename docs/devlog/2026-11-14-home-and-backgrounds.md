@@ -2,7 +2,7 @@
 
 ## November 14, 2026
 
-The adjustable focus window worked in the first Quest test. Added a LockedIn home screen to the same passthrough scene, with **Create Border** and **Choose Background**. **Create Border** opens the existing two-corner placement flow.
+The adjustable focus window worked in the first Quest test. Added a LockedIn home screen to the same passthrough scene, with **Create Border** and **Choose Background**. **Create Border** opens [screen and keyboard calibration](2026-11-14-calibrated-border.md).
 
 ## Controls
 
@@ -15,7 +15,7 @@ The adjustable focus window worked in the first Quest test. Added a LockedIn hom
 
 1. Build `LockedInPassthrough` and check that the title and both buttons appear over live passthrough.
 2. Pick each background and confirm that its preview is visible and the menu remains readable.
-3. Choose **Create Border** and place two corners. Verify that the inside remains clear and the selected style applies outside it.
+3. Choose **Create Border** and calibrate the screen. Verify that the inside remains clear and the selected style applies outside it.
 4. Press **A** to restore normal visibility. Open the menu with the right grip, choose another background, and check that the border stays in place.
 
 The home screen and new backgrounds still need to be tested in a Quest build.

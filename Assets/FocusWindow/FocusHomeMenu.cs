@@ -28,6 +28,10 @@ namespace LockedIn
         private readonly RectTransform backgrounds;
         private readonly RectTransform cursor;
         private readonly Font font;
+        private readonly RectTransform calibration;
+        private readonly Text calibrationTitle;
+        private readonly Text calibrationHint;
+        private bool calibrationActive;
         private readonly List<MenuItem> items = new List<MenuItem>();
 
         public bool IsOpen => panel.gameObject.activeSelf;
@@ -73,6 +77,38 @@ namespace LockedIn
             AddImage(cursor, Accent);
             cursor.gameObject.SetActive(false);
             ShowBackgrounds(false);
+
+            calibration = CreateRect("Border calibration", camera, new Vector2(700, 112), Vector2.zero);
+            calibration.localPosition = new Vector3(0f, -0.25f, 1.1f);
+            calibration.localScale = Vector3.one * 0.0011f;
+            var calibrationCanvas = calibration.gameObject.AddComponent<Canvas>();
+            calibrationCanvas.renderMode = RenderMode.WorldSpace;
+            calibrationCanvas.worldCamera = canvas.worldCamera;
+            calibrationCanvas.sortingOrder = canvas.sortingOrder;
+            AddImage(calibration, Panel);
+            calibrationTitle = AddText(calibration, "", new Vector2(650, 44), new Vector2(0, 27),
+                                       30, Ink, FontStyle.Bold);
+            calibrationHint = AddText(calibration, "", new Vector2(650, 52), new Vector2(0, -23), 21, Muted);
+            calibration.gameObject.SetActive(false);
+        }
+
+        public void ShowCalibration(string title, string hint)
+        {
+            calibrationTitle.text = title;
+            calibrationHint.text = hint;
+            calibrationActive = true;
+            SetCalibrationVisible(true);
+        }
+
+        public void HideCalibration()
+        {
+            calibrationActive = false;
+            SetCalibrationVisible(false);
+        }
+
+        public void SetCalibrationVisible(bool visible)
+        {
+            calibration.gameObject.SetActive(visible && calibrationActive && !IsOpen);
         }
 
         public void Toggle(BackgroundStyle selected)
@@ -129,6 +165,8 @@ namespace LockedIn
         {
             if (panel != null)
                 UnityEngine.Object.Destroy(panel.gameObject);
+            if (calibration != null)
+                UnityEngine.Object.Destroy(calibration.gameObject);
         }
 
         private void ShowBackgrounds(bool show)
