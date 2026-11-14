@@ -14,7 +14,7 @@
 | Original scene renders in Unity's Game tab | Confirmed in the Editor |
 | Quest 3 plugged into the laptop over USB | Confirmed physical connection |
 | Green monitor material assigned to the scene | Verified in the project files. Visual recheck pending |
-| USB debugging and headset detection by Unity | Pending |
+| Quest 3 detection and debugging authorization through Windows ADB | Confirmed. ADB lists `Quest_3` with status `device` |
 | Scene launches with head tracking on the Quest 3 | Pending |
 | Live Codex connection to the running Unity Editor | Pending. A batch launch from Codex timed out connecting to Unity's licensing client |
 
@@ -40,6 +40,10 @@ The signup redirect persisted after signing out and back in and reinstalling the
 
 Meta VR Developer Hub discovered the Quest 3, then stopped at its account pairing check. The local Developer Hub log recorded `ACCOUNT_MISMATCH`. Compare the primary headset account with the account signed into Developer Hub and the Developer Dashboard. If they match and the error persists, report both the mobile signup redirect and the desktop pairing error to Meta Developer Support.
 
+## Headset connection verified
+
+Windows ADB lists the Quest 3 as `device`, confirming the headset is reachable and debugging is authorized. The Unity project still has a fixed camera and no XR packages. The first headset build has yet to run.
+
 ## Next milestone
 
-Enable Developer Mode and USB debugging on the Quest and confirm it appears in ADB from a Windows terminal. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset. Device detection and headset launch are still pending.
+Enable and switch to the Meta Quest build platform in Unity. Enable OpenXR for Android, add an XR Origin with a tracked camera to the scene, then select the Quest 3 as the Run Device and use **Build and Run**. Verify that the app launches and the view follows head movement.
