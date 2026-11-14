@@ -23,6 +23,10 @@ If the **Run Device** list stays on **Default device**, close Meta Quest Develop
 
 Unity imported the corrected passthrough scene, then stopped the build because the Android **Meta Quest: Camera (Passthrough)** feature requires **Meta Quest: Session**. Enabled both features in the Android OpenXR settings. The input polling and Thin Link Time Optimization messages are optional. Rebuild and verify the passthrough scene on the headset.
 
+## Black screen after first passthrough build
+
+Unity built and deployed the passthrough scene in 4 minutes 12 seconds. On the Quest, the Unity splash appeared and then the view went black. The installed build could be relaunched over ADB. Vulkan initialized, but the captured restart lost foreground focus before the scene could be evaluated. The Android **Composition Layers Support** OpenXR feature was disabled. The package uses that feature to create the layer provider that submits passthrough to the headset compositor, so the feature is now enabled. Verify the next build while wearing the headset.
+
 ## Reopen the installed app from Windows
 
 The first APK is installed and its launch activity was resolved over ADB. If **Unknown Sources** is missing, connect the Quest by USB and run the following in Windows PowerShell. This starts the existing build.
