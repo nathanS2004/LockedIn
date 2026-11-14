@@ -13,6 +13,12 @@ Confirmed that text on the laptop is readable through the Quest 3's system passt
 
 This build uses system-composited passthrough. The next implementation step is an adjustable focus area and a before-and-after toggle. The new app build and headset view still need to be verified.
 
+## Scene import fix
+
+Unity's Editor log showed that the scene metadata contained a 33-character GUID, so Unity ignored the file and marked its build-list row **Deleted**. Corrected the GUID to 32 hexadecimal characters and restored the matching enabled row at the top of the build list. Unity resolved OpenXR Meta 2.7.0, AR Foundation 6.6.2, and XR Composition Layers 2.6.1.
+
+If the **Run Device** list stays on **Default device**, close Meta Quest Developer Hub and click **Refresh**. The Unity log showed its Android SDK's ADB server conflicting with Developer Hub's bundled ADB.
+
 ## Reopen the installed app from Windows
 
 The first APK is installed and its launch activity was resolved over ADB. If **Unknown Sources** is missing, connect the Quest by USB and run the following in Windows PowerShell. This starts the existing build.
