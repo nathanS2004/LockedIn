@@ -36,6 +36,8 @@ The Quest 3 was already paired to its primary Meta account. Adding a secondary p
 
 Created a Meta developer team and confirmed that the developer account shows as verified. The Meta Horizon phone app still redirects to developer signup when opening Developer Mode, and the switch is unavailable. The next check is to confirm the Developer Dashboard, phone app, and Quest primary profile use the same account, then sign out and back into the phone app. Developer Mode and USB deployment are pending.
 
+The signup redirect persisted after signing out and back in and reinstalling the phone app. Connecting over USB and trying the Windows Mixed Reality Link shortcut did not display a QR code. That shortcut opens Windows desktop pairing. The next setup attempt is Meta VR Developer Hub's **Device Manager → Set Up New Device** flow over Bluetooth, followed by USB debugging authorization. [Meta VR Developer Hub setup guide](https://developers.meta.com/vr/documentation/unity/ts-mqdh-device-setup/)
+
 ## Next milestone
 
 Enable Developer Mode and USB debugging on the Quest and confirm it appears in ADB from a Windows terminal. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset. Device detection and headset launch are still pending.
