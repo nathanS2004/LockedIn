@@ -20,6 +20,18 @@
 
 Unity displayed a Built-In Render Pipeline deprecation warning. The original scene still rendered in the Game tab.
 
+## Headset deployment on this laptop
+
+The Windows development laptop uses Intel Arc 140V graphics. Meta Horizon Link does not support this GPU. Use Unity's **Build and Run** over a data-capable USB cable so the Quest 3 runs the APK directly. [Meta's Arc 140V compatibility note](https://developers.meta.com/vr/support/investigations/1131782022535905/)
+
+## Android tools installed
+
+Verified that Unity `6000.6.9f1` has Android Build Support, OpenJDK, the Android NDK, SDK Platform 36, and ADB. Unity Hub reported exit code 1 for the optional Visual Studio Community 2026 installation. The installer log said Visual Studio Community 2026 was already installed, and its executable was present. The Android modules installed independently.
+
+## Headset account and pairing
+
+The Quest 3 was already paired to its primary Meta account. Adding a secondary profile allowed sign-in on the headset, but the Meta Horizon phone app still reported that the headset was already paired. The next step is for the primary account holder to enable Developer Mode through their paired app. USB debugging authorization and device detection still need to be verified. [Meta's guidance on primary and secondary Quest accounts](https://communityforums.atmeta.com/discussions/OtherTroubleshooting/meta-quest-3-initial-setup-and-multiple-family-accounts/1135028/replies/1136153)
+
 ## Next milestone
 
-Install **Android Build Support**, **Android SDK & NDK Tools**, and **OpenJDK** for Unity `6000.6.9f1`. Enable Developer Mode and USB debugging on the Quest. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset.
+Enable Developer Mode and USB debugging on the Quest and confirm it appears in ADB from a Windows terminal. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset. Device detection and headset launch are still pending.
