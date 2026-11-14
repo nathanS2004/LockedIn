@@ -36,7 +36,7 @@ namespace LockedIn
 
         public bool IsOpen => panel.gameObject.activeSelf;
 
-        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder)
+        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder, Action autoSelect)
         {
             panel = CreateRect("LockedIn menu", camera, new Vector2(640, 450), Vector2.zero);
             panel.localPosition = new Vector3(0f, -0.025f, 1.1f);
@@ -55,8 +55,9 @@ namespace LockedIn
             home = CreateRect("Home", panel, panel.sizeDelta, Vector2.zero);
             backgrounds = CreateRect("Choose Background", panel, panel.sizeDelta, Vector2.zero);
 
-            AddItem(home, "Create Border", new Vector2(556, 76), new Vector2(0, 51), createBorder);
-            AddItem(home, "Choose Background", new Vector2(556, 76), new Vector2(0, -44),
+            AddItem(home, "Auto Select Screen", new Vector2(556, 65), new Vector2(0, 82), autoSelect);
+            AddItem(home, "Create Border", new Vector2(556, 65), new Vector2(0, 5), createBorder);
+            AddItem(home, "Choose Background", new Vector2(556, 65), new Vector2(0, -72),
                     () => ShowBackgrounds(true));
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
