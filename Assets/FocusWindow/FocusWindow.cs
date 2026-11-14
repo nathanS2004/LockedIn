@@ -21,6 +21,11 @@ namespace LockedIn
         private readonly InputAction reset = new InputAction(type: InputActionType.Button, binding: RightHand + "secondaryButton");
         private readonly InputAction adjust = new InputAction(binding: RightHand + "thumbstick");
 
+        private readonly InputAction openMenu = new InputAction(type: InputActionType.Button, binding: RightHand + "grip");
+        private FocusHomeMenu menu;
+        private BackgroundStyle background = BackgroundStyle.Dimmed;
+        private bool placingBorder;
+
         private Material mask;
         private MeshRenderer overlay;
         private Mesh mesh;
@@ -64,7 +69,8 @@ namespace LockedIn
             overlay = surface.AddComponent<MeshRenderer>();
             overlay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             overlay.receiveShadows = false;
-            mask = new Material(maskShader);
+            mask = new Material(maskShader) { renderQueue = 2990 };
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -78,6 +84,7 @@ namespace LockedIn
             toggle.Enable();
             reset.Enable();
             adjust.Enable();
+            openMenu.Enable();
         }
 
         private void OnDisable()
@@ -89,6 +96,8 @@ namespace LockedIn
             toggle.Disable();
             reset.Disable();
             adjust.Disable();
+            openMenu.Disable();
+            menu?.Hide();
             if (overlay != null)
                 overlay.enabled = false;
         }
@@ -102,6 +111,8 @@ namespace LockedIn
             toggle.Dispose();
             reset.Dispose();
             adjust.Dispose();
+            openMenu.Dispose();
+            menu?.Dispose();
             if (overlay != null)
                 Destroy(overlay.gameObject);
             if (mask != null)
@@ -112,26 +123,38 @@ namespace LockedIn
 
         private void LateUpdate()
         {
-            if (reset.WasPressedThisFrame())
+            if (openMenu.WasPressedThisFrame())
             {
-                firstCornerPlaced = false;
-                windowPlaced = false;
-                dimEnabled = false;
+                menu.Toggle(background);
+                RenderMask(false, default);
+                return;
             }
 
-            if (windowPlaced && toggle.WasPressedThisFrame())
+            bool hasRay = TryGetPointerRay(out Ray pointerRay);
+            bool pressed = place.WasPressedThisFrame();
+            if (menu.IsOpen)
+            {
+                menu.UpdatePointer(hasRay, pointerRay, pressed, background);
+                RenderMask(false, default);
+                return;
+            }
+
+            if (reset.WasPressedThisFrame())
+                BeginBorder();
+
+            if (!placingBorder && background != BackgroundStyle.Passthrough && toggle.WasPressedThisFrame())
                 dimEnabled = !dimEnabled;
 
             float stick = adjust.ReadValue<Vector2>().y;
             if (Mathf.Abs(stick) > AimDeadZone)
             {
-                if (windowPlaced)
+                if (windowPlaced && background == BackgroundStyle.Dimmed)
                     dimming = Mathf.Clamp(dimming + stick * Time.unscaledDeltaTime * 0.5f, 0.15f, 0.85f);
-                else if (!firstCornerPlaced)
+                else if (placingBorder && !firstCornerPlaced)
                     distance = Mathf.Clamp(distance + stick * Time.unscaledDeltaTime * 0.65f, 0.3f, 1.5f);
             }
 
-            if (!firstCornerPlaced && !windowPlaced)
+            if (placingBorder && !firstCornerPlaced)
             {
                 planeNormal = transform.forward;
                 planeRight = transform.right;
@@ -140,8 +163,8 @@ namespace LockedIn
             }
 
             Vector2 aim = default;
-            bool hasAim = !windowPlaced && TryGetAim(out aim);
-            if (hasAim && place.WasPressedThisFrame())
+            bool hasAim = placingBorder && hasRay && TryGetAim(pointerRay, out aim);
+            if (hasAim && pressed)
             {
                 if (!firstCornerPlaced)
                 {
@@ -152,41 +175,81 @@ namespace LockedIn
                          Mathf.Abs(firstCorner.y - aim.y) >= MinWindowSize)
                 {
                     bounds = GetBounds(firstCorner, aim);
+                    placingBorder = false;
                     windowPlaced = true;
-                    dimEnabled = true;
-                    hasAim = false;
+                    dimEnabled = background != BackgroundStyle.Passthrough;
                 }
             }
 
-            bool showPreview = hasAim && !windowPlaced;
+            RenderMask(placingBorder && hasAim, aim);
+        }
+
+        private void BeginBorder()
+        {
+            menu.Hide();
+            firstCornerPlaced = false;
+            windowPlaced = false;
+            dimEnabled = false;
+            placingBorder = true;
+        }
+
+        private void SelectBackground(BackgroundStyle style)
+        {
+            background = style;
+            dimEnabled = style != BackgroundStyle.Passthrough;
+        }
+
+        private void RenderMask(bool showPreview, Vector2 aim)
+        {
             overlay.enabled = dimEnabled || showPreview;
             if (!overlay.enabled)
                 return;
+
+            Color color = Color.black;
+            float opacity = dimming;
+            switch (background)
+            {
+                case BackgroundStyle.Slate:
+                    color = new Color32(35, 55, 82, 255);
+                    opacity = 1f;
+                    break;
+                case BackgroundStyle.Forest:
+                    color = new Color32(28, 64, 52, 255);
+                    opacity = 1f;
+                    break;
+            }
 
             mask.SetVector("_PlaneOrigin", planeOrigin);
             mask.SetVector("_PlaneNormal", planeNormal);
             mask.SetVector("_PlaneRight", planeRight);
             mask.SetVector("_PlaneUp", planeUp);
-            mask.SetFloat("_Dimming", dimEnabled ? dimming : 0f);
+            mask.SetColor("_BackgroundColor", color);
+            mask.SetFloat("_Dimming", dimEnabled ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
+            mask.SetFloat("_HasWindow", windowPlaced ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetFloat("_ShowBounds", showPreview && firstCornerPlaced ? 1f : 0f);
             mask.SetVector("_Aim", new Vector4(aim.x, aim.y, 0f, 0f));
             mask.SetVector("_Window", showPreview && firstCornerPlaced ? GetBounds(firstCorner, aim) : bounds);
         }
 
-        private bool TryGetAim(out Vector2 point)
+        private bool TryGetPointerRay(out Ray ray)
         {
-            point = default;
+            ray = default;
             if (tracked.ReadValue<float>() < 0.5f || pointerPosition.activeControl == null ||
                 pointerRotation.activeControl == null)
                 return false;
 
-            // The rig's Camera Offset maps the controller's tracking-space pose into the scene.
             Transform trackingSpace = transform.parent;
             Vector3 origin = trackingSpace.TransformPoint(pointerPosition.ReadValue<Vector3>());
             Vector3 direction = trackingSpace.TransformDirection(pointerRotation.ReadValue<Quaternion>() * Vector3.forward);
+            ray = new Ray(origin, direction);
+            return true;
+        }
+
+        private bool TryGetAim(Ray ray, out Vector2 point)
+        {
+            point = default;
             var plane = new Plane(planeNormal, planeOrigin);
-            var ray = new Ray(origin, direction);
             if (!plane.Raycast(ray, out float hit))
                 return false;
 
