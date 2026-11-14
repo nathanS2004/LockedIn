@@ -20,6 +20,10 @@
 
 Unity displayed a Built-In Render Pipeline deprecation warning. The original scene still rendered in the Game tab.
 
+## Headset deployment on this laptop
+
+The Windows development laptop uses Intel Arc 140V graphics. Meta Horizon Link does not support this GPU. Use Unity's **Build and Run** over a data-capable USB cable so the Quest 3 runs the APK directly. [Meta's Arc 140V compatibility note](https://developers.meta.com/vr/support/investigations/1131782022535905/)
+
 ## Next milestone
 
 Install **Android Build Support**, **Android SDK & NDK Tools**, and **OpenJDK** for Unity `6000.6.9f1`. Enable Developer Mode and USB debugging on the Quest. Configure the Meta Quest build profile and OpenXR, add a tracked XR Origin to the scene, then use **Build and Run** to verify the scene inside the headset.
