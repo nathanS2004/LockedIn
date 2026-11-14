@@ -13,6 +13,20 @@ Confirmed that text on the laptop is readable through the Quest 3's system passt
 
 This build uses system-composited passthrough. The next implementation step is an adjustable focus area and a before-and-after toggle. The new app build and headset view still need to be verified.
 
+## Scene import fix
+
+Unity's Editor log showed that the scene metadata contained a 33-character GUID, so Unity ignored the file and marked its build-list row **Deleted**. Corrected the GUID to 32 hexadecimal characters and restored the matching enabled row at the top of the build list. Unity resolved OpenXR Meta 2.7.0, AR Foundation 6.6.2, and XR Composition Layers 2.6.1.
+
+If the **Run Device** list stays on **Default device**, close Meta Quest Developer Hub and click **Refresh**. The Unity log showed its Android SDK's ADB server conflicting with Developer Hub's bundled ADB.
+
+## OpenXR build validation fix
+
+Unity imported the corrected passthrough scene, then stopped the build because the Android **Meta Quest: Camera (Passthrough)** feature requires **Meta Quest: Session**. Enabled both features in the Android OpenXR settings. The input polling and Thin Link Time Optimization messages are optional. Rebuild and verify the passthrough scene on the headset.
+
+## Black screen after first passthrough build
+
+Unity built and deployed the passthrough scene in 4 minutes 12 seconds. On the Quest, the Unity splash appeared and then the view went black. The installed build could be relaunched over ADB. Vulkan initialized, but the captured restart lost foreground focus before the scene could be evaluated. The Android **Composition Layers Support** OpenXR feature was disabled. The package uses that feature to create the layer provider that submits passthrough to the headset compositor, so the feature is now enabled. Verify the next build while wearing the headset.
+
 ## Reopen the installed app from Windows
 
 The first APK is installed and its launch activity was resolved over ADB. If **Unknown Sources** is missing, connect the Quest by USB and run the following in Windows PowerShell. This starts the existing build.
