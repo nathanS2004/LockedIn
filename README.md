@@ -10,11 +10,16 @@ LockedIn is a Meta Quest 3 hackathon prototype for reducing visual distractions 
 
 Unity 6.6 may display a deprecation warning for the Built-In Render Pipeline used by this test scene.
 
+## LockedIn home and backgrounds
+
+Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home screen opens on launch. Use the right controller's trigger to select and its grip to open or close the menu. See [Home screen and backgrounds](docs/devlog/2026-11-14-home-and-backgrounds.md) for the full controls.
+
 ## Development log
 
 - [2026-11-14 — Unity scene and Quest 3 USB setup](docs/devlog/2026-11-14-unity-scene-and-quest-usb.md)
 - [2026-11-14 — First Quest 3 launch](docs/devlog/2026-11-14-first-quest-launch.md)
 - [2026-11-14 — Native passthrough prototype](docs/devlog/2026-11-14-native-passthrough.md)
 - [2026-11-14 — Adjustable focus window](docs/devlog/2026-11-14-focus-window.md)
+- [2026-11-14 — Home screen and backgrounds](docs/devlog/2026-11-14-home-and-backgrounds.md)
 
 Each milestone PR should document the steps taken, what was verified, and the next step. Record whether validation happened in Unity's Game tab or on the headset.

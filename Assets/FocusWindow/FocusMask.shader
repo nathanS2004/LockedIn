@@ -19,7 +19,13 @@ Shader "LockedIn/Focus Mask"
 
             float3 _PlaneOrigin, _PlaneNormal, _PlaneRight, _PlaneUp;
             float4 _Window, _Aim;
-            float _Dimming, _Preview, _ShowBounds;
+            float3 _BackgroundColor;
+            float _Dimming, _HasWindow, _Preview, _ShowBounds;
+
+            float4 Background(float opacity)
+            {
+                return float4(_BackgroundColor * opacity, opacity);
+            }
 
             struct AppData
             {
@@ -48,15 +54,18 @@ Shader "LockedIn/Focus Mask"
             float4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                if (_HasWindow < 0.5 && _Preview < 0.5)
+                    return Background(_Dimming);
+
                 float3 eye = _WorldSpaceCameraPos;
                 float3 ray = normalize(input.worldPosition - eye);
                 float alignment = dot(ray, _PlaneNormal);
                 if (alignment <= 0.0001)
-                    return float4(0, 0, 0, _Dimming);
+                    return Background(_Dimming);
 
                 float depth = dot(_PlaneOrigin - eye, _PlaneNormal) / alignment;
                 if (depth <= 0)
-                    return float4(0, 0, 0, _Dimming);
+                    return Background(_Dimming);
 
                 float3 offset = eye + ray * depth - _PlaneOrigin;
                 float2 uv = float2(dot(offset, _PlaneRight), dot(offset, _PlaneUp));
@@ -66,7 +75,8 @@ Shader "LockedIn/Focus Mask"
                 float dotAlpha = 1.0 - smoothstep(0.003, 0.006, distance(uv, _Aim.xy));
                 float lineAlpha = _ShowBounds * (1.0 - smoothstep(0.001, 0.004, abs(edge)));
                 float preview = _Preview * max(dotAlpha, lineAlpha);
-                return float4(float3(0.12, 1.0, 0.75) * preview, max(preview, dim));
+                float4 background = Background(dim);
+                return lerp(background, float4(0.12, 1.0, 0.75, 1.0), preview);
             }
             ENDCG
         }
