@@ -33,6 +33,13 @@ Use a **2.4 GHz** Wi-Fi network accessible to both devices. The Quest may use
 another band on the same LAN if the router allows communication between bands.
 Use a normal personal/open network; this sketch doesn't implement enterprise
 username/login or captive-portal flows. Guest/client isolation blocks direct UDP.
+When moving to another location, changing the virtual background alone needs no
+network changes. If using a different Wi-Fi network, connect Quest to it, update
+`SECRET_SSID`/`SECRET_PASS` in the private header and set `QUEST_IP` to the
+headset's IPv4 address on that new network, then upload the sketch again.
+Unity does not need another build just for new network credentials/IP: the app
+listens on UDP port 4210. Check **LIVE** inside Home to confirm reception.
+
 If Quest changes IP, update `QUEST_IP` in the sketch and upload again; a router
 DHCP reservation for the Quest avoids that. Wi-Fi credentials can also be changed
 only by editing the private header and uploading.
