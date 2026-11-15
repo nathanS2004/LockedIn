@@ -14,7 +14,7 @@ standalone Quest APK; a laptop may supply USB power but is not a data relay.
 - Add a background UDP receiver, calibrated/smoothed firmware, reconnect/status
   handling and immediate clear on zero, bypass or loss of signal. Keep existing
   controller bindings. Retain the older Python bridge as an optional diagnostic.
-- Add the potentiometer as a dedicated fifth-walkthrough sequence page, plus
+- Add a dedicated potentiometer page in a five-slide walkthrough, plus
   setup instructions and a session record distinguishing observations from tests.
 
 ## Scope and reproducibility

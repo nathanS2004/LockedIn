@@ -12,8 +12,8 @@ float4 RoomAmbientFill(float3 ray)
     // Both eyes share this low-detail spherical color field. It approximates
     // unseen surroundings; it is not a second, incorrectly aligned camera view.
     float3 direction = normalize(mul((float3x3)_RoomWorldToLeft, ray));
-    float2 uv = float2(0.5 + atan2(direction.x, direction.z) / (2 * UNITY_PI),
-                      0.5 + asin(clamp(direction.y, -1, 1)) / UNITY_PI);
+    // Directional gradient rather than longitude: no seam behind the user.
+    float2 uv = 0.5 + direction.xy * 0.45;
     float3 color = tex2D(_RoomAmbient, uv).rgb;
     return float4(color * _RoomBlurMix, _RoomBlurMix);
 }
