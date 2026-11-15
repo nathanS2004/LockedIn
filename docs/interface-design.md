@@ -4,10 +4,10 @@ The in-headset console is redesigned as a quiet study instrument: warm paper, da
 
 ## What changed
 
-- **Home:** three distinct workspace actions, a photographic surroundings entry, a live potentiometer dial, actual workspace readiness and an always-accessible field guide.
+- **Home:** three distinct workspace actions, a photographic surroundings entry, a live potentiometer dial inside Home, actual workspace readiness and an always-accessible field guide.
 - **Collection:** seven environments in a readable list. Pointing previews a location; the trigger applies it. A persistent selection rail marks the active environment. Room Blur has an intentionally typographic live-room preview.
 - **Field guide:** five slides cover controller input, AI review, backgrounds, the physical knob and recalibration. AI, depth and manual placement each retain a separate explanation before starting. Credits are reachable from the collection.
-- **During focus:** a small instrument strip shows actual effect percentage, signal/bypass state and a level bar. It is hidden behind Home and during calibration so prompts do not compete.
+- **During focus:** no floating percentage/status bar follows the user. Knob intensity and connection state remain available inside Home; calibration guidance appears only when needed.
 - **Calibration:** a larger paper panel with an orange spine and clearly separated title/instructions carries the existing scan/retry/accept/manual prompts.
 - **Interaction:** short hover color transitions, page fade-ins, pointer press feedback and subtle right-controller haptics when supported. There is no dwell activation. Input still uses the existing controller ray and trigger.
 

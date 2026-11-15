@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,11 +24,10 @@ namespace LockedIn
         private static readonly Color Line = new Color32(199, 204, 191, 255);
         private readonly RectTransform panel, home, backgrounds, cursor;
         private readonly Font font, headingFont;
-        private readonly RectTransform calibration, knobStatus;
-        private readonly Text calibrationTitle, calibrationHint, knobStatusText;
+        private readonly RectTransform calibration;
+        private readonly Text calibrationTitle, calibrationHint;
         private readonly Text dialValue, dialState, workspaceState, effectDetail;
         private readonly FocusDialGraphic dial;
-        private readonly RectTransform meterFill;
         private readonly CanvasGroup pageFade;
         private readonly FocusUiMotion motion;
         private readonly RawImage homePhoto, galleryPhoto;
@@ -127,15 +126,7 @@ namespace LockedIn
             calibrationTitle = Heading(calibration, "", new Vector2(738, 52), new Vector2(0, 40), 34);
             calibrationHint = AddText(calibration, "", new Vector2(738, 84), new Vector2(0, -30), 22, Ink);
             calibration.gameObject.SetActive(false);
-            knobStatus = CreateRect("Focus instrument / status", camera, new Vector2(520, 68), Vector2.zero);
-            knobStatus.localPosition = new Vector3(0, -0.27f, 0.9f); knobStatus.localScale = Vector3.one * 0.00065f;
-            SetupCanvas(knobStatus, camera.GetComponent<Camera>(), 6); AddImage(knobStatus, Ink);
-            Mark(knobStatus, new Vector2(-232, 3), 18);
-            knobStatusText = AddText(knobStatus, "ENVIRONMENT   0%  /  NO SIGNAL", new Vector2(440, 40), new Vector2(20, 6), 19, Panel);
-            Rule(knobStatus, new Vector2(0, -24), new Vector2(476, 2), Muted);
-            meterFill = CreateRect("Effect level", knobStatus, new Vector2(0, 2), new Vector2(-238, -24));
-            meterFill.pivot = new Vector2(0, 0.5f); AddImage(meterFill, Accent);
-            motion = knobStatus.gameObject.AddComponent<FocusUiMotion>(); motion.Tick = Animate;
+            motion = panel.gameObject.AddComponent<FocusUiMotion>(); motion.Tick = Animate;
             BuildInstructions(); ShowBackgrounds(false); RefreshPhotos(previewStyle);
             if (PlayerPrefs.GetInt("LockedIn.Walkthrough.v2", 0) == 0) StartWalkthrough();
         }
@@ -145,7 +136,6 @@ namespace LockedIn
             targetAmount = Mathf.Clamp01(amount);
             bool live = state.StartsWith("LIVE", StringComparison.OrdinalIgnoreCase);
             string shortState = bypass ? "BYPASS" : live ? "LIVE" : state == "CONTROLLER MODE" ? "CONTROLLER" : "NO SIGNAL";
-            knobStatusText.text = $"{mode.ToUpperInvariant()}   {amount * 100:0}%  /  {shortState}";
             dialState.text = shortState; dialState.color = live && !bypass ? new Color32(56, 111, 73, 255) : Ink;
             effectDetail.text = !string.IsNullOrWhiteSpace(detail) ? detail.Trim() : live ? "Turn your knob.\nEase into focus." : "Keep Nano powered.\nWi-Fi connects directly.";
             effectDetail.resizeTextForBestFit = true; effectDetail.resizeTextMinSize = 16; effectDetail.resizeTextMaxSize = 19;
@@ -190,7 +180,7 @@ namespace LockedIn
         public void Dispose()
         {
             motion.Tick = null;
-            DestroyUi(panel.gameObject); DestroyUi(calibration.gameObject); DestroyUi(knobStatus.gameObject);
+            DestroyUi(panel.gameObject); DestroyUi(calibration.gameObject);
             foreach (Texture2D texture in previews.Values) if (texture != null) Resources.UnloadAsset(texture);
             previews.Clear();
         }
@@ -205,9 +195,6 @@ namespace LockedIn
             dial.Amount = shownAmount;
             int percent = Mathf.RoundToInt(shownAmount * 100);
             if (percent != displayedPercent) { dialValue.text = percent + "%"; displayedPercent = percent; }
-            meterFill.sizeDelta = new Vector2(shownAmount * 476, 2);
-            bool statusVisible = !IsOpen && !calibration.gameObject.activeSelf;
-            knobStatus.GetComponent<Canvas>().enabled = statusVisible;
             if (!IsOpen) return;
             pageFade.alpha = Mathf.MoveTowards(pageFade.alpha, 1, delta * 7);
             pressPulse = Mathf.MoveTowards(pressPulse, 0, delta * 8);
@@ -361,12 +348,14 @@ namespace LockedIn
                 Check(menu.walkthroughPage == 4, "Five guide slides are not reachable");
                 menu.ShowCalibration("Test", "Test"); Check(!menu.calibration.gameObject.activeSelf, "Calibration overlapped Home");
                 menu.Hide(); menu.SetCalibrationVisible(true); menu.Animate(0.02f);
-                Check(menu.calibration.gameObject.activeSelf && !menu.knobStatus.GetComponent<Canvas>().enabled, "Guidance/status visibility failed");
+                Check(menu.calibration.gameObject.activeSelf && !menu.panel.gameObject.activeSelf, "Calibration visibility failed");
+                foreach (Transform child in camera.transform)
+                    Check(child.name != "Focus instrument / status", "Floating status bar still exists");
                 menu.HideCalibration(); menu.Toggle(BackgroundStyle.SecludedBeach);
                 Check(menu.IsOpen && menu.home.gameObject.activeSelf, "Grip reopening did not reset Home");
                 int total = detected + depth + manual + chosen;
                 Click(900, 900); Check(total == detected + depth + manual + chosen, "Outside ray activated a button");
-                return "PASS: controller ray routing, three detector callbacks, seven environments, credits return, five guide slides, calibration/status visibility, grip reopen, outside-ray rejection.";
+                return "PASS: controller ray routing, three detector callbacks, seven environments, credits return, five guide slides, calibration visibility, no floating status bar, grip reopen, outside-ray rejection.";
             }
             finally { menu.Dispose(); }
         }
