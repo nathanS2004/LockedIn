@@ -35,16 +35,17 @@ namespace LockedIn
         private void StartWalkthrough() { walkthroughPage = 0; ShowWalkthrough(); }
         private void ShowWalkthrough()
         {
-            string[] titles = { "1 / 4   Your controls", "2 / 4   Keep your workspace clear", "3 / 4   Choose your surroundings", "4 / 4   Adjust and try again" };
+            string[] titles = { "1 / 5   Your controls", "2 / 5   Keep your workspace clear", "3 / 5   Choose your surroundings", "4 / 5   Your physical knob", "5 / 5   Adjust and try again" };
             string[] bodies = {
                 "Use the RIGHT controller.\nPoint at a button and squeeze the index-finger trigger to select.\nSqueeze the side grip to open or close Home. Help is always available there.",
                 "Start with Detect Workspace (AI). Look at the whole screen and keyboard, then scan.\nReview the cyan borders. Press right A to accept, or trigger to retry. Right B starts manual placement.",
-                "After selecting a workspace, open Home > Choose Background.\nYour screen and keyboard stay clear. Passthrough shows your room. Photo environments surround you but are not walkable spaces.",
-                "While focusing, right A hides/shows the background. Right B starts a NEW manual border.\nBorders stay in the room: scan again if you move your laptop.\nDim Room strength: right thumbstick up/down."
+                "After selecting a workspace, open Home > Choose Background.\nTry Sundowner Overlook, Shanghai Bund, or another environment. Your screen and keyboard stay clear. Photos surround you but are not walkable spaces.\nKnob minimum or right A restores the room.",
+                "Turn the physical knob to adjust your surroundings.\nRoom Blur: more turn adds blur to real camera images outside your workspace. Other backgrounds: more turn adds opacity.\nMinimum or NO SIGNAL restores the room. Keep the Nano powered by USB; it sends directly over Wi-Fi.",
+                "While focusing, right A hides/shows the effect. Right B starts a NEW manual border.\nBorders stay in the room: scan again if you move your laptop.\nRoom Blur needs camera + scene access. A soft camera-derived fill covers unseen surroundings; your workspace stays clear."
             };
-            Explain(titles[walkthroughPage], bodies[walkthroughPage], walkthroughPage == 3 ? "Get started" : "Next", () => {
+            Explain(titles[walkthroughPage], bodies[walkthroughPage], walkthroughPage == titles.Length - 1 ? "Get started" : "Next", () => {
                 if (++walkthroughPage < titles.Length) ShowWalkthrough();
-                else { PlayerPrefs.SetInt("LockedIn.Walkthrough.v1", 1); PlayerPrefs.Save(); ShowBackgrounds(false); }
+                else { PlayerPrefs.SetInt("LockedIn.Walkthrough.v2", 1); PlayerPrefs.Save(); ShowBackgrounds(false); }
             });
         }
         private void ExplainAI(Action start) => Explain("AI: screen + keyboard",
@@ -54,6 +55,6 @@ namespace LockedIn
         private void ExplainManual(Action start) => Explain("Manual: place three corners",
             "Move the controller close to each screen corner: top-left, top-right, then bottom-left. The cyan dot sits just ahead of the controller; it is NOT a distant laser hit.\nTrigger records each point. Then add the keyboard or press A for screen only. This replaces your previous border.", "Start manual", start);
         private void ExplainBackgrounds() => Explain("Choose your background",
-            "First create or detect a workspace so it stays clear. Without one, backgrounds remain partly transparent.\nChoose a photo, solid color, or Dim Room. Passthrough restores your room.\nClose Home with the right grip. Outside menus/scans, right A toggles the background.", "Browse", () => ShowBackgrounds(true));
+            "First create or detect a workspace so it stays clear.\nRoom Blur combines real-camera blur with soft fill around the entire workspace. Unseen areas are approximated. The knob changes blur strength. Photos/colors use opacity.\nClose Home with right grip. A bypasses. No signal restores the room.", "Browse", () => ShowBackgrounds(true));
     }
 }

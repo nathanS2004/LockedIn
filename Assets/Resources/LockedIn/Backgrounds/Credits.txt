@@ -18,6 +18,15 @@ https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/meadow_2.jp
 Both nature photos: CC0 https://creativecommons.org/publicdomain/zero/1.0/
 License statement: https://polyhaven.com/license
 
-All three are photographic 360x180 equirectangular still images, not generated art.
+Sundowner Overlook: Dario Barresi, Poly Haven.
+https://polyhaven.com/a/sundowner_overlook
+https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/sundowner_overlook.jpg
+
+Shanghai Bund: Greg Zaal, Poly Haven.
+https://polyhaven.com/a/shanghai_bund
+https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/shanghai_bund.jpg
+Both new environments: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+
+All five are photographic 360x180 equirectangular still images, not generated art.
 Nature JPEG tone mapping is supplied by Poly Haven. Unity import caps width at
 4096 pixels, preserves 2:1 projection, uses sRGB and Android ASTC 6x6 compression.

@@ -14,9 +14,10 @@ Shader "LockedIn/Focus Mask"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 3.0
+            #pragma target 3.5
             #pragma multi_compile_instancing
             #include "UnityCG.cginc"
+            #include "RoomBlurReprojection.cginc"
 
             float3 _WindowOrigin, _WindowRight, _WindowUp, _WindowNormal;
             float3 _WindowMin, _WindowMax, _Probe, _BackgroundColor;
@@ -25,8 +26,9 @@ Shader "LockedIn/Focus Mask"
 
             sampler2D _Panorama;
             float _UsePanorama;
-            float4 Background(float opacity, float3 ray)
+            float4 Background(float opacity, float3 ray, float3 eye)
             {
+                if (_RoomBlurMode > 0.5) return RoomBlur(eye, ray);
                 float3 color = _BackgroundColor;
                 if (_UsePanorama > 0.5)
                 {
@@ -85,7 +87,7 @@ Shader "LockedIn/Focus Mask"
                 float3 eye = _WorldSpaceCameraPos;
                 float3 ray = normalize(input.worldPosition - eye);
                 if (_HasWindow < 0.5 && _Preview < 0.5)
-                    return Background(_Dimming, ray);
+                    return Background(_Dimming, ray, eye);
                 if (_Preview > 0.5)
                 {
                     float3 delta = _Probe - eye;
@@ -114,7 +116,7 @@ Shader "LockedIn/Focus Mask"
                     float border = saturate(coverage - max(firstInner, secondInner));
                     return float4(float3(0.12, 1.0, 0.75) * border, max(border, 0.12 * (1.0 - coverage)));
                 }
-                return Background(_Dimming * (1.0 - coverage), ray);
+                return Background(_Dimming, ray, eye) * (1.0 - coverage);
             }
             ENDCG
         }

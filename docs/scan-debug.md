@@ -18,3 +18,7 @@ Runtime, AI-enabled runtime, and editor compilation passed with Unity analyzers.
 The file is created on the first Scan Debug trigger press in the updated build. The old Logcat export remains separate. Uninstalling the app or clearing its data removes the saved scans, so export them first. For a fresh experiment, use the session ID or export the current file and remove it from the app folder while the app is closed.
 
 Persistence and USB export still need verification on the rebuilt APK.
+
+## Integration with the room backgrounds
+
+Scan Debug uses the same detection flow as standard scanning. Starting a debug scan stops room blur while the scan runs, and pausing the app still suspends the selected environment. Scan diagnostics are available alongside the physical knob and the expanded panorama picker.

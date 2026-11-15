@@ -39,6 +39,7 @@ namespace LockedIn
         private bool placingBorder;
 
         private Material mask;
+        private RoomPassthroughBlur roomBlur;
         private MeshRenderer overlay;
         private Mesh mesh;
         private float dimming = 0.55f;
@@ -81,6 +82,7 @@ namespace LockedIn
             overlay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
+            roomBlur = new RoomPassthroughBlur(mask, transform);
             screenSelection = new ScreenDepthSelection(raycasts);
             menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect,
                 () => BeginWorkspaceDetection(), () => BeginWorkspaceDetection(debug: true));
@@ -102,6 +104,8 @@ namespace LockedIn
 
         private void OnDisable()
         {
+            knobOpacity.Clear();
+            roomBlur?.Stop();
             pointerPosition.Disable();
             pointerRotation.Disable();
             tracked.Disable();
@@ -131,6 +135,7 @@ namespace LockedIn
             adjust.Dispose();
             openMenu.Dispose();
             menu?.Dispose();
+            roomBlur?.Dispose();
             if (panorama != null) Resources.UnloadAsset(panorama);
             if (overlay != null)
                 Destroy(overlay.gameObject);
@@ -194,7 +199,7 @@ namespace LockedIn
                 dimEnabled = !dimEnabled;
 
             float stick = adjust.ReadValue<Vector2>().y;
-            if (windowPlaced && background == BackgroundStyle.Dimmed && Mathf.Abs(stick) > AimDeadZone)
+            if (!knobControlsOpacity && windowPlaced && background == BackgroundStyle.Dimmed && Mathf.Abs(stick) > AimDeadZone)
                 dimming = Mathf.Clamp(dimming + stick * Time.unscaledDeltaTime * 0.5f, 0.15f, 0.85f);
 
             RenderMask(false, default);
@@ -202,6 +207,7 @@ namespace LockedIn
 
         private void BeginBorder()
         {
+            roomBlur?.Stop();
             CancelWorkspaceDetection();
             hasKeyboardWindow = false;
             CancelAutoSelection();
@@ -215,6 +221,7 @@ namespace LockedIn
 
         private void BeginAutoSelect()
         {
+            roomBlur?.Stop();
             CancelWorkspaceDetection();
             menu.Hide();
             placingBorder = false;
@@ -370,8 +377,11 @@ namespace LockedIn
 
         private void SelectBackground(BackgroundStyle style)
         {
+            if (style != background) roomBlur?.Stop();
             string resource = style == BackgroundStyle.Library ? "library" :
-                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" : null;
+                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" :
+                style == BackgroundStyle.SundownerOverlook ? "sundowner_overlook" :
+                style == BackgroundStyle.ShanghaiBund ? "shanghai_bund" : null;
             if (style != background)
             {
                 var next = resource == null ? null : Resources.Load<Texture2D>("LockedIn/Backgrounds/" + resource);
@@ -392,24 +402,25 @@ namespace LockedIn
         {
             bool review = selectingWorkspace && workspacePreview != null && workspacePreview.Volumes.Count > 0;
             bool showBackground = dimEnabled && !suppressBackground;
-            overlay.enabled = showBackground || showPreview || review;
-            if (!overlay.enabled)
-                return;
 
             Color color = Color.black;
             float opacity = dimming;
             switch (background)
             {
-                case BackgroundStyle.Slate:
-                    color = new Color32(35, 55, 82, 255);
-                    opacity = 1f;
-                    break;
-                case BackgroundStyle.Forest:
-                    color = new Color32(28, 64, 52, 255);
+                case BackgroundStyle.RoomBlur:
                     opacity = 1f;
                     break;
             }
 
+            if (panorama != null) opacity = 1f;
+            opacity = GetEnvironmentOpacity(opacity, showBackground);
+            bool blurMode = background == BackgroundStyle.RoomBlur;
+            mask.SetFloat("_RoomBlurMode", blurMode ? 1f : 0f);
+            roomBlur.Update(blurMode && showBackground && windowPlaced && !opacitySuspended &&
+                !menu.IsOpen && !placingBorder && !selectingScreen && !selectingWorkspace, opacity);
+            overlay.enabled = !opacitySuspended && (opacity > 0 || showPreview || review);
+            if (!overlay.enabled)
+                return;
             mask.SetVector("_WindowOrigin", screenOrigin);
             mask.SetVector("_WindowRight", screenRight);
             mask.SetVector("_WindowUp", screenUp);
@@ -427,10 +438,9 @@ namespace LockedIn
                 mask.SetFloat("_HasSecondWindow", second ? 1f : 0f);
                 if (second) SetVolume("_Second", workspacePreview.Volumes[1]);
             }
-            if (panorama != null) opacity = 1f;
             mask.SetFloat("_UsePanorama", panorama != null ? 1f : 0f);
             mask.SetColor("_BackgroundColor", color);
-            mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
+            mask.SetFloat("_Dimming", opacity);
             mask.SetFloat("_HasWindow", windowPlaced || review ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetVector("_Probe", probe);

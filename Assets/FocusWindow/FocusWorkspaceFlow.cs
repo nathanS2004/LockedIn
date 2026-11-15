@@ -21,6 +21,7 @@ namespace LockedIn
 
         private void BeginWorkspaceDetection(bool debug = false)
         {
+            roomBlur?.Stop();
             CancelAutoSelection();
             CancelWorkspaceDetection();
             placingBorder = false;
@@ -203,6 +204,7 @@ namespace LockedIn
 
         private void OnApplicationPause(bool paused)
         {
+            SuspendEnvironment(paused);
             if (paused && workspaceScan != null) CancelWorkspaceDetection();
         }
 

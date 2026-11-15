@@ -14,7 +14,21 @@ Unity 6.6 may display a deprecation warning for the Built-In Render Pipeline use
 
 Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home screen opens on launch. Use the right controller's trigger to select and its grip to open or close the menu. See [Home screen and backgrounds](docs/devlog/2026-11-14-home-and-backgrounds.md) for the full controls.
 
+## Physical knob
+
+The knob controls photo/color opacity or Room Blur strength while keeping the existing detection and Home UI. The Nano 33 IoT sends directly over Wi-Fi to Quest `192.168.1.171:4210`; no laptop bridge is needed at runtime. Laptop USB can power the Nano while Quest runs unplugged. See [direct Nano setup](Arduino/LockedInKnobWiFi/README.md), [app setup/testing](docs/potentiometer-control.md), and [experimental room blur](docs/room-blur.md).
+
+Room Blur replaces Slate Blue. Valid camera/depth areas use real-image Gaussian blur; a soft camera-derived fill covers the remaining surroundings while the detected workspace stays clear. Peripheral fill is approximate. The five-page tutorial includes the potentiometer.
+
+Sundowner Overlook replaces the Passthrough background tile; Shanghai Bund replaces Forest Green. Right A bypass or knob minimum still restores the room. Both panoramas download through the existing asset-restoration script.
+See [panorama replacements and validation](docs/panorama-replacements.md) for asset credits, setup and remaining headset checks.
+
 ## Development log
+
+- [Session handoff and verification record](docs/devlog/2026-11-14-potentiometer-session-handoff.md)
+- [Room blur and the knob tutorial](docs/devlog/2026-11-14-room-blur-and-knob-tutorial.md)
+- [Direct Nano Wi-Fi](docs/devlog/2026-11-14-nano-direct-wifi.md)
+- [Full-app integration and build repairs](docs/devlog/2026-11-14-environment-knob-integration.md)
 
 - [2026-11-15 — AI workspace selection prototype](docs/devlog/2026-11-15-ai-workspace-selection.md)
 

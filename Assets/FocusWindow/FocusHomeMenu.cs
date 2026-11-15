@@ -9,11 +9,12 @@ namespace LockedIn
     {
         Passthrough,
         Dimmed,
-        Slate,
-        Forest,
+        RoomBlur,
+        ShanghaiBund,
         Library,
         Beach,
-        Meadow
+        Meadow,
+        SundownerOverlook
     }
 
     internal sealed partial class FocusHomeMenu : IDisposable
@@ -34,6 +35,8 @@ namespace LockedIn
         private readonly RectTransform calibration;
         private readonly Text calibrationTitle;
         private readonly Text calibrationHint;
+        private readonly RectTransform knobStatus;
+        private readonly Text knobStatusText;
         private bool calibrationActive;
         private readonly List<MenuItem> items = new List<MenuItem>();
 
@@ -70,10 +73,10 @@ namespace LockedIn
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);
-            var styles = new[] { BackgroundStyle.Passthrough, BackgroundStyle.Dimmed,
-                BackgroundStyle.Slate, BackgroundStyle.Forest, BackgroundStyle.Library,
+            var styles = new[] { BackgroundStyle.SundownerOverlook, BackgroundStyle.Dimmed,
+                BackgroundStyle.RoomBlur, BackgroundStyle.ShanghaiBund, BackgroundStyle.Library,
                 BackgroundStyle.Beach, BackgroundStyle.Meadow };
-            var names = new[] { "Passthrough", "Dim Room", "Slate Blue", "Forest Green",
+            var names = new[] { "Sundowner Overlook", "Dim Room", "Room Blur", "Shanghai Bund",
                 "Historic Library", "Sunrise Beach", "Sunny Meadow" };
             for (int i = 0; i < styles.Length; i++)
             {
@@ -84,7 +87,7 @@ namespace LockedIn
             }
             AddItem(backgrounds, "Back", new Vector2(268, 48), new Vector2(144, -98),
                     () => ShowBackgrounds(false));
-            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Nature: Poly Haven / CC0",
+            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Other photos: Poly Haven / CC0",
                 new Vector2(590, 42), new Vector2(0, -151), 13, Muted,
                 alignment: TextAnchor.MiddleCenter);
 
@@ -106,9 +109,18 @@ namespace LockedIn
                                        30, Ink, FontStyle.Bold);
             calibrationHint = AddText(calibration, "", new Vector2(710, 88), new Vector2(0, -29), 22, Muted);
             calibration.gameObject.SetActive(false);
+            knobStatus = CreateRect("Environment effect status", camera, new Vector2(620, 64), Vector2.zero);
+            knobStatus.localPosition = new Vector3(0f, -0.30f, 0.8f);
+            knobStatus.localScale = Vector3.one * 0.00055f;
+            var statusCanvas = knobStatus.gameObject.AddComponent<Canvas>();
+            statusCanvas.renderMode = RenderMode.WorldSpace;
+            statusCanvas.worldCamera = canvas.worldCamera;
+            statusCanvas.sortingOrder = canvas.sortingOrder + 1;
+            knobStatusText = AddText(knobStatus, "Environment 0% | NO SIGNAL - CLEAR", knobStatus.sizeDelta,
+                Vector2.zero, 20, Muted, alignment: TextAnchor.MiddleCenter);
             BuildInstructions();
             BuildScanDebug();
-            if (PlayerPrefs.GetInt("LockedIn.Walkthrough.v1", 0) == 0) StartWalkthrough();
+            if (PlayerPrefs.GetInt("LockedIn.Walkthrough.v2", 0) == 0) StartWalkthrough();
         }
 
         public void ShowCalibration(string title, string hint)
@@ -118,6 +130,8 @@ namespace LockedIn
             calibrationActive = true;
             SetCalibrationVisible(true);
         }
+
+        public void SetKnobStatus(string value) => knobStatusText.text = value;
 
         public void HideCalibration()
         {
@@ -188,6 +202,8 @@ namespace LockedIn
                 UnityEngine.Object.Destroy(scanDebugPanel.gameObject);
             if (calibration != null)
                 UnityEngine.Object.Destroy(calibration.gameObject);
+            if (knobStatus != null)
+                UnityEngine.Object.Destroy(knobStatus.gameObject);
         }
 
         private void ShowBackgrounds(bool show)
@@ -214,6 +230,9 @@ namespace LockedIn
             RectTransform rect = CreateRect(title, parent, size, position);
             Image surface = AddImage(rect, Card);
             Text label = AddText(rect, title, size - new Vector2(32, 0), Vector2.zero, 28, Ink, FontStyle.Bold);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 20;
+            label.resizeTextMaxSize = 28;
             items.Add(new MenuItem(title, surface, label, activate, style));
         }
 

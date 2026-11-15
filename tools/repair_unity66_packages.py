@@ -56,6 +56,8 @@ replace('Editor/BuildingBlocks/BlocksWindow.cs','int dropTargetInstanceID,','Ent
 replace('Editor/BuildingBlocks/BlocksWindow.cs','EditorUtility.InstanceIDToObject(dropTargetInstanceID)','EditorUtility.EntityIdToObject(dropTargetInstanceID)')
 replace('Editor/BuildingBlocks/BlocksWindow.cs','DragAndDrop.AddDropHandler(HierarchyDropHandler)','DragAndDrop.AddDropHandlerV2(HierarchyDropHandler)')
 replace('Editor/BuildingBlocks/BlocksWindow.cs','DragAndDrop.RemoveDropHandler(HierarchyDropHandler)','DragAndDrop.RemoveDropHandlerV2(HierarchyDropHandler)')
+replace('Editor/BuildingBlocks/BlocksWindow.cs','DragAndDrop.AddDropHandler(SceneDropHandler)','DragAndDrop.AddDropHandlerV2(SceneDropHandler)')
+replace('Editor/BuildingBlocks/BlocksWindow.cs','DragAndDrop.RemoveDropHandler(SceneDropHandler)','DragAndDrop.RemoveDropHandlerV2(SceneDropHandler)')
 p=root/'Packages/manifest.json'
 s=json.loads(p.read_text()); s['dependencies']['com.unity.modules.unitywebrequestaudio']='1.0.0'
 p.write_text(json.dumps(s,indent=2)+'\n')
