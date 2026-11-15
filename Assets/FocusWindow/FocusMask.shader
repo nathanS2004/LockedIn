@@ -17,10 +17,9 @@ Shader "LockedIn/Focus Mask"
             #pragma multi_compile_instancing
             #include "UnityCG.cginc"
 
-            float3 _PlaneOrigin, _PlaneNormal, _PlaneRight, _PlaneUp;
-            float4 _Window, _Aim;
-            float3 _BackgroundColor;
-            float _Dimming, _HasWindow, _Preview, _ShowBounds;
+            float3 _WindowOrigin, _WindowRight, _WindowUp, _WindowNormal;
+            float3 _WindowMin, _WindowMax, _Probe, _BackgroundColor;
+            float _Dimming, _HasWindow, _Preview;
 
             float4 Background(float opacity)
             {
@@ -51,6 +50,25 @@ Shader "LockedIn/Focus Mask"
                 return output;
             }
 
+            float WindowCoverage(float3 eye, float3 ray)
+            {
+                float3 relativeEye = eye - _WindowOrigin;
+                float3 origin = float3(dot(relativeEye, _WindowRight), dot(relativeEye, _WindowUp),
+                                       dot(relativeEye, _WindowNormal));
+                float3 direction = float3(dot(ray, _WindowRight), dot(ray, _WindowUp),
+                                          dot(ray, _WindowNormal));
+
+                // Slab intersection. Keep near-parallel rays finite while retaining their sign.
+                float3 slope = lerp(-1.0, 1.0, step(0.0, direction)) * max(abs(direction), 0.000001);
+                float3 entry = (_WindowMin - origin) / slope;
+                float3 exit = (_WindowMax - origin) / slope;
+                float3 nearSide = min(entry, exit);
+                float3 farSide = max(entry, exit);
+                float nearHit = max(0.0, max(nearSide.x, max(nearSide.y, nearSide.z)));
+                float farHit = min(farSide.x, min(farSide.y, farSide.z));
+                return smoothstep(-0.006, 0.0, farHit - nearHit);
+            }
+
             float4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -59,24 +77,16 @@ Shader "LockedIn/Focus Mask"
 
                 float3 eye = _WorldSpaceCameraPos;
                 float3 ray = normalize(input.worldPosition - eye);
-                float alignment = dot(ray, _PlaneNormal);
-                if (alignment <= 0.0001)
-                    return Background(_Dimming);
+                if (_Preview > 0.5)
+                {
+                    float3 delta = _Probe - eye;
+                    float depth = dot(delta, ray);
+                    float markerDistance = length(delta - depth * ray);
+                    float alpha = depth > 0.0 ? 1.0 - smoothstep(0.003, 0.006, markerDistance) : 0.0;
+                    return float4(float3(0.12, 1.0, 0.75) * alpha, alpha);
+                }
 
-                float depth = dot(_PlaneOrigin - eye, _PlaneNormal) / alignment;
-                if (depth <= 0)
-                    return Background(_Dimming);
-
-                float3 offset = eye + ray * depth - _PlaneOrigin;
-                float2 uv = float2(dot(offset, _PlaneRight), dot(offset, _PlaneUp));
-                float2 edges = max(_Window.xy - uv, uv - _Window.zw);
-                float edge = max(edges.x, edges.y);
-                float dim = _Dimming * smoothstep(0.0, 0.012, edge);
-                float dotAlpha = 1.0 - smoothstep(0.003, 0.006, distance(uv, _Aim.xy));
-                float lineAlpha = _ShowBounds * (1.0 - smoothstep(0.001, 0.004, abs(edge)));
-                float preview = _Preview * max(dotAlpha, lineAlpha);
-                float4 background = Background(dim);
-                return lerp(background, float4(0.12, 1.0, 0.75, 1.0), preview);
+                return Background(_Dimming * (1.0 - WindowCoverage(eye, ray)));
             }
             ENDCG
         }

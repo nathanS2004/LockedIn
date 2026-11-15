@@ -28,11 +28,15 @@ namespace LockedIn
         private readonly RectTransform backgrounds;
         private readonly RectTransform cursor;
         private readonly Font font;
+        private readonly RectTransform calibration;
+        private readonly Text calibrationTitle;
+        private readonly Text calibrationHint;
+        private bool calibrationActive;
         private readonly List<MenuItem> items = new List<MenuItem>();
 
         public bool IsOpen => panel.gameObject.activeSelf;
 
-        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder)
+        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder, Action autoSelect)
         {
             panel = CreateRect("LockedIn menu", camera, new Vector2(640, 450), Vector2.zero);
             panel.localPosition = new Vector3(0f, -0.025f, 1.1f);
@@ -51,8 +55,9 @@ namespace LockedIn
             home = CreateRect("Home", panel, panel.sizeDelta, Vector2.zero);
             backgrounds = CreateRect("Choose Background", panel, panel.sizeDelta, Vector2.zero);
 
-            AddItem(home, "Create Border", new Vector2(556, 76), new Vector2(0, 51), createBorder);
-            AddItem(home, "Choose Background", new Vector2(556, 76), new Vector2(0, -44),
+            AddItem(home, "Auto Select Screen", new Vector2(556, 65), new Vector2(0, 82), autoSelect);
+            AddItem(home, "Create Border", new Vector2(556, 65), new Vector2(0, 5), createBorder);
+            AddItem(home, "Choose Background", new Vector2(556, 65), new Vector2(0, -72),
                     () => ShowBackgrounds(true));
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
@@ -73,6 +78,38 @@ namespace LockedIn
             AddImage(cursor, Accent);
             cursor.gameObject.SetActive(false);
             ShowBackgrounds(false);
+
+            calibration = CreateRect("Border calibration", camera, new Vector2(700, 112), Vector2.zero);
+            calibration.localPosition = new Vector3(0f, -0.25f, 1.1f);
+            calibration.localScale = Vector3.one * 0.0011f;
+            var calibrationCanvas = calibration.gameObject.AddComponent<Canvas>();
+            calibrationCanvas.renderMode = RenderMode.WorldSpace;
+            calibrationCanvas.worldCamera = canvas.worldCamera;
+            calibrationCanvas.sortingOrder = canvas.sortingOrder;
+            AddImage(calibration, Panel);
+            calibrationTitle = AddText(calibration, "", new Vector2(650, 44), new Vector2(0, 27),
+                                       30, Ink, FontStyle.Bold);
+            calibrationHint = AddText(calibration, "", new Vector2(650, 52), new Vector2(0, -23), 21, Muted);
+            calibration.gameObject.SetActive(false);
+        }
+
+        public void ShowCalibration(string title, string hint)
+        {
+            calibrationTitle.text = title;
+            calibrationHint.text = hint;
+            calibrationActive = true;
+            SetCalibrationVisible(true);
+        }
+
+        public void HideCalibration()
+        {
+            calibrationActive = false;
+            SetCalibrationVisible(false);
+        }
+
+        public void SetCalibrationVisible(bool visible)
+        {
+            calibration.gameObject.SetActive(visible && calibrationActive && !IsOpen);
         }
 
         public void Toggle(BackgroundStyle selected)
@@ -129,6 +166,8 @@ namespace LockedIn
         {
             if (panel != null)
                 UnityEngine.Object.Destroy(panel.gameObject);
+            if (calibration != null)
+                UnityEngine.Object.Destroy(calibration.gameObject);
         }
 
         private void ShowBackgrounds(bool show)

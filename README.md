@@ -21,5 +21,7 @@ Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home s
 - [2026-11-14 — Native passthrough prototype](docs/devlog/2026-11-14-native-passthrough.md)
 - [2026-11-14 — Adjustable focus window](docs/devlog/2026-11-14-focus-window.md)
 - [2026-11-14 — Home screen and backgrounds](docs/devlog/2026-11-14-home-and-backgrounds.md)
+- [2026-11-14 — Calibrate the focus border](docs/devlog/2026-11-14-calibrated-border.md)
+- [2026-11-14 — One-click screen selection](docs/devlog/2026-11-14-auto-screen-selection.md)
 
 Each milestone PR should document the steps taken, what was verified, and the next step. Record whether validation happened in Unity's Game tab or on the headset.

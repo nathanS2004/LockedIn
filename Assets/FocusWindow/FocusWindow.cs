@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.ARFoundation;
 
 namespace LockedIn
 {
@@ -7,9 +8,19 @@ namespace LockedIn
     public sealed class FocusWindow : MonoBehaviour
     {
         [SerializeField] private Shader maskShader;
+        [SerializeField] private ARRaycastManager raycasts;
+
+        private const string ScenePermission = "com.oculus.permission.USE_SCENE";
+        private ScreenDepthSelection screenSelection;
+        private Coroutine screenScan;
+        private bool selectingScreen;
+        private float nextPreviewSample;
+        private float previewDistance = 0.65f;
 
         private const string RightHand = "<XRController>{RightHand}/";
-        private const float MinWindowSize = 0.025f;
+        private const float ProbeOffset = 0.06f;
+        private const float BorderPadding = 0.035f;
+        private const float MinScreenEdge = 0.06f;
         private const float AimDeadZone = 0.15f;
         private const float OverlayDistance = 0.1f;
 
@@ -29,17 +40,16 @@ namespace LockedIn
         private Material mask;
         private MeshRenderer overlay;
         private Mesh mesh;
-        private float distance = 0.65f;
         private float dimming = 0.55f;
-        private bool firstCornerPlaced;
         private bool windowPlaced;
         private bool dimEnabled;
-        private Vector3 planeOrigin;
-        private Vector3 planeRight;
-        private Vector3 planeUp;
-        private Vector3 planeNormal;
-        private Vector2 firstCorner;
-        private Vector4 bounds;
+        private int calibrationStep;
+        private Vector3 screenOrigin;
+        private Vector3 screenRight;
+        private Vector3 screenUp;
+        private Vector3 screenNormal;
+        private Vector3 windowMin;
+        private Vector3 windowMax;
 
         private void Awake()
         {
@@ -50,7 +60,7 @@ namespace LockedIn
                 return;
             }
 
-            // This quad covers both eyes. The shader projects each eye ray onto the focus plane.
+            // This quad covers both eyes. The shader tests each eye ray against the calibrated volume.
             var surface = new GameObject("Focus mask");
             surface.transform.SetParent(transform, false);
             surface.transform.localPosition = Vector3.forward * OverlayDistance;
@@ -70,7 +80,8 @@ namespace LockedIn
             overlay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
-            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder);
+            screenSelection = new ScreenDepthSelection(raycasts);
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -97,7 +108,11 @@ namespace LockedIn
             reset.Disable();
             adjust.Disable();
             openMenu.Disable();
+            CancelAutoSelection();
+            if (raycasts != null)
+                raycasts.enabled = false;
             menu?.Hide();
+            menu?.SetCalibrationVisible(false);
             if (overlay != null)
                 overlay.enabled = false;
         }
@@ -125,7 +140,10 @@ namespace LockedIn
         {
             if (openMenu.WasPressedThisFrame())
             {
+                if (selectingScreen)
+                    CancelAutoSelection();
                 menu.Toggle(background);
+                menu.SetCalibrationVisible(placingBorder);
                 RenderMask(false, default);
                 return;
             }
@@ -142,55 +160,197 @@ namespace LockedIn
             if (reset.WasPressedThisFrame())
                 BeginBorder();
 
-            if (!placingBorder && background != BackgroundStyle.Passthrough && toggle.WasPressedThisFrame())
+            if (selectingScreen)
+            {
+                UpdateAutoSelect(hasRay, pointerRay, pressed);
+                return;
+            }
+
+            if (placingBorder)
+            {
+                bool showProbe = hasRay;
+                Vector3 probe = pointerRay.GetPoint(ProbeOffset);
+                if (calibrationStep == 3 && toggle.WasPressedThisFrame())
+                    FinishBorder();
+                else if (hasRay && pressed)
+                    RecordCalibrationPoint(probe);
+
+                RenderMask(placingBorder && showProbe, probe);
+                return;
+            }
+
+            if (background != BackgroundStyle.Passthrough && toggle.WasPressedThisFrame())
                 dimEnabled = !dimEnabled;
 
             float stick = adjust.ReadValue<Vector2>().y;
-            if (Mathf.Abs(stick) > AimDeadZone)
-            {
-                if (windowPlaced && background == BackgroundStyle.Dimmed)
-                    dimming = Mathf.Clamp(dimming + stick * Time.unscaledDeltaTime * 0.5f, 0.15f, 0.85f);
-                else if (placingBorder && !firstCornerPlaced)
-                    distance = Mathf.Clamp(distance + stick * Time.unscaledDeltaTime * 0.65f, 0.3f, 1.5f);
-            }
+            if (windowPlaced && background == BackgroundStyle.Dimmed && Mathf.Abs(stick) > AimDeadZone)
+                dimming = Mathf.Clamp(dimming + stick * Time.unscaledDeltaTime * 0.5f, 0.15f, 0.85f);
 
-            if (placingBorder && !firstCornerPlaced)
-            {
-                planeNormal = transform.forward;
-                planeRight = transform.right;
-                planeUp = transform.up;
-                planeOrigin = transform.position + planeNormal * distance;
-            }
-
-            Vector2 aim = default;
-            bool hasAim = placingBorder && hasRay && TryGetAim(pointerRay, out aim);
-            if (hasAim && pressed)
-            {
-                if (!firstCornerPlaced)
-                {
-                    firstCorner = aim;
-                    firstCornerPlaced = true;
-                }
-                else if (Mathf.Abs(firstCorner.x - aim.x) >= MinWindowSize &&
-                         Mathf.Abs(firstCorner.y - aim.y) >= MinWindowSize)
-                {
-                    bounds = GetBounds(firstCorner, aim);
-                    placingBorder = false;
-                    windowPlaced = true;
-                    dimEnabled = background != BackgroundStyle.Passthrough;
-                }
-            }
-
-            RenderMask(placingBorder && hasAim, aim);
+            RenderMask(false, default);
         }
 
         private void BeginBorder()
         {
+            CancelAutoSelection();
             menu.Hide();
-            firstCornerPlaced = false;
+            calibrationStep = 0;
             windowPlaced = false;
             dimEnabled = false;
             placingBorder = true;
+            menu.ShowCalibration("1 / 3   Top-left of the screen", "Line up the cyan dot with the corner and pull the trigger.");
+        }
+
+        private void BeginAutoSelect()
+        {
+            menu.Hide();
+            placingBorder = false;
+            selectingScreen = true;
+            nextPreviewSample = 0f;
+            previewDistance = 0.65f;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(ScenePermission))
+            {
+                menu.ShowCalibration("Allow scene access", "Screen selection needs depth access. Press B for manual placement.");
+                UnityEngine.Android.Permission.RequestUserPermission(ScenePermission);
+                return;
+            }
+#endif
+            ShowAimPrompt();
+        }
+
+        private void ShowAimPrompt()
+        {
+            menu.ShowCalibration("Auto Select Screen", "Aim at the center of the screen and pull the trigger once. B for manual.");
+        }
+
+        private void UpdateAutoSelect(bool hasRay, Ray ray, bool pressed)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(ScenePermission))
+            {
+                RenderMask(false, default, true);
+                return;
+            }
+#endif
+            if (raycasts == null)
+            {
+                menu.ShowCalibration("Depth unavailable", "Press B to place a border manually.");
+                RenderMask(false, default, true);
+                return;
+            }
+
+            if (!raycasts.enabled)
+            {
+                raycasts.enabled = true;
+                ShowAimPrompt();
+            }
+
+            if (screenScan == null && hasRay && Time.unscaledTime >= nextPreviewSample)
+            {
+                nextPreviewSample = Time.unscaledTime + 0.10f;
+                if (screenSelection.TryDepthPoint(ray, out Vector3 surface))
+                    previewDistance = Mathf.Clamp(Vector3.Distance(ray.origin, surface), 0.15f, 2f);
+            }
+
+            if (screenScan == null && hasRay && pressed)
+            {
+                menu.ShowCalibration("Checking screen edges", "Hold still for a moment.");
+                screenScan = StartCoroutine(screenSelection.FindScreen(ray, transform.position, transform.right,
+                                                                       ApplyAutoSelection));
+            }
+
+            RenderMask(hasRay && screenScan == null, ray.GetPoint(previewDistance), true);
+        }
+
+        private void ApplyAutoSelection(ScreenDepthSelection.ScreenVolume? result)
+        {
+            screenScan = null;
+            if (!result.HasValue)
+            {
+                menu.ShowCalibration("Screen edges unclear", "Aim at the screen center and try again, or press B for manual.");
+                return;
+            }
+
+            ScreenDepthSelection.ScreenVolume volume = result.Value;
+            screenOrigin = volume.Origin;
+            screenRight = volume.Right;
+            screenUp = volume.Up;
+            screenNormal = volume.Normal;
+            windowMin = volume.Min;
+            windowMax = volume.Max;
+            selectingScreen = false;
+            FinishBorder();
+        }
+
+        private void CancelAutoSelection()
+        {
+            if (!selectingScreen)
+                return;
+
+            if (screenScan != null)
+                StopCoroutine(screenScan);
+            screenScan = null;
+            selectingScreen = false;
+            menu?.HideCalibration();
+        }
+
+        private void RecordCalibrationPoint(Vector3 point)
+        {
+            switch (calibrationStep)
+            {
+                case 0:
+                    screenOrigin = point;
+                    calibrationStep = 1;
+                    menu.ShowCalibration("2 / 3   Top-right of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    break;
+                case 1:
+                    Vector3 topEdge = point - screenOrigin;
+                    float width = topEdge.magnitude;
+                    if (width < MinScreenEdge)
+                    {
+                        menu.ShowCalibration("2 / 3   Top-right of the screen", "Move farther from the first corner and try again.");
+                        return;
+                    }
+
+                    screenRight = topEdge / width;
+                    windowMax.x = width + BorderPadding;
+                    calibrationStep = 2;
+                    menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    break;
+                case 2:
+                    Vector3 side = Vector3.ProjectOnPlane(point - screenOrigin, screenRight);
+                    float height = side.magnitude;
+                    if (height < MinScreenEdge)
+                    {
+                        menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Move below the top edge and try again.");
+                        return;
+                    }
+
+                    screenUp = -side / height;
+                    screenNormal = Vector3.Cross(screenRight, screenUp).normalized;
+                    windowMin = new Vector3(-BorderPadding, -height - BorderPadding, -BorderPadding);
+                    windowMax.y = BorderPadding;
+                    windowMax.z = BorderPadding;
+                    calibrationStep = 3;
+                    menu.ShowCalibration("Include the keyboard?", "Trigger at the front of the keyboard, or press A for screen only.");
+                    break;
+                case 3:
+                    Vector3 delta = point - screenOrigin;
+                    var local = new Vector3(Vector3.Dot(delta, screenRight), Vector3.Dot(delta, screenUp),
+                                            Vector3.Dot(delta, screenNormal));
+                    windowMin = Vector3.Min(windowMin, local - Vector3.one * BorderPadding);
+                    windowMax = Vector3.Max(windowMax, local + Vector3.one * BorderPadding);
+                    FinishBorder();
+                    break;
+            }
+        }
+
+        private void FinishBorder()
+        {
+            placingBorder = false;
+            windowPlaced = true;
+            dimEnabled = background != BackgroundStyle.Passthrough;
+            menu.HideCalibration();
         }
 
         private void SelectBackground(BackgroundStyle style)
@@ -199,9 +359,10 @@ namespace LockedIn
             dimEnabled = style != BackgroundStyle.Passthrough;
         }
 
-        private void RenderMask(bool showPreview, Vector2 aim)
+        private void RenderMask(bool showPreview, Vector3 probe, bool suppressBackground = false)
         {
-            overlay.enabled = dimEnabled || showPreview;
+            bool showBackground = dimEnabled && !suppressBackground;
+            overlay.enabled = showBackground || showPreview;
             if (!overlay.enabled)
                 return;
 
@@ -219,17 +380,17 @@ namespace LockedIn
                     break;
             }
 
-            mask.SetVector("_PlaneOrigin", planeOrigin);
-            mask.SetVector("_PlaneNormal", planeNormal);
-            mask.SetVector("_PlaneRight", planeRight);
-            mask.SetVector("_PlaneUp", planeUp);
+            mask.SetVector("_WindowOrigin", screenOrigin);
+            mask.SetVector("_WindowRight", screenRight);
+            mask.SetVector("_WindowUp", screenUp);
+            mask.SetVector("_WindowNormal", screenNormal);
+            mask.SetVector("_WindowMin", windowMin);
+            mask.SetVector("_WindowMax", windowMax);
             mask.SetColor("_BackgroundColor", color);
-            mask.SetFloat("_Dimming", dimEnabled ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
+            mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
             mask.SetFloat("_HasWindow", windowPlaced ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
-            mask.SetFloat("_ShowBounds", showPreview && firstCornerPlaced ? 1f : 0f);
-            mask.SetVector("_Aim", new Vector4(aim.x, aim.y, 0f, 0f));
-            mask.SetVector("_Window", showPreview && firstCornerPlaced ? GetBounds(firstCorner, aim) : bounds);
+            mask.SetVector("_Probe", probe);
         }
 
         private bool TryGetPointerRay(out Ray ray)
@@ -244,24 +405,6 @@ namespace LockedIn
             Vector3 direction = trackingSpace.TransformDirection(pointerRotation.ReadValue<Quaternion>() * Vector3.forward);
             ray = new Ray(origin, direction);
             return true;
-        }
-
-        private bool TryGetAim(Ray ray, out Vector2 point)
-        {
-            point = default;
-            var plane = new Plane(planeNormal, planeOrigin);
-            if (!plane.Raycast(ray, out float hit))
-                return false;
-
-            Vector3 offset = ray.GetPoint(hit) - planeOrigin;
-            point = new Vector2(Vector3.Dot(offset, planeRight), Vector3.Dot(offset, planeUp));
-            return true;
-        }
-
-        private static Vector4 GetBounds(Vector2 one, Vector2 two)
-        {
-            return new Vector4(Mathf.Min(one.x, two.x), Mathf.Min(one.y, two.y),
-                               Mathf.Max(one.x, two.x), Mathf.Max(one.y, two.y));
         }
     }
 }
