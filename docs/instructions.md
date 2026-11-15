@@ -18,8 +18,8 @@ Each mode has a preflight explanation with a Start button and Back to Home:
 - Backgrounds: select a workspace first; otherwise opacity is capped at 45%.
   Passthrough shows the room. Photo panoramas are not walkable environments.
   Room Blur replaces Slate Blue, requires an accepted workspace, and filters real
-  camera images where stereo camera/depth reprojection is valid. Uncovered
-  surroundings remain clear; the screen stays clear. The knob controls
+  camera images where stereo camera/depth reprojection is valid. Soft ambient
+  fill covers unseen surroundings; the screen stays clear. The knob controls
   blur radius in this experimental mode.
 
 Outside menus/selection, A toggles background, B starts a new manual border,
