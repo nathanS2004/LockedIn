@@ -66,7 +66,7 @@ namespace LockedIn
 
             AddItem(home, "How to use LockedIn", new Vector2(268, 42), new Vector2(-144, -148), StartWalkthrough);
             AddItem(home, "Scan Debug", new Vector2(268, 42), new Vector2(144, -148),
-                () => Explain("Debug an AI scan", "Run the same AI scan with a frozen camera preview and detected boxes. Results go to the device log. The frame stays in memory until you retry or leave.", "Start debug", debugWorkspace));
+                () => Explain("Debug an AI scan", "Run the same AI scan with a frozen camera preview and detected boxes. Results are saved to a log on the headset. The frame stays in memory until you retry or leave.", "Start debug", debugWorkspace));
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);

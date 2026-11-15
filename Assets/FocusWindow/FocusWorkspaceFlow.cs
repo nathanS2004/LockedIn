@@ -169,6 +169,7 @@ namespace LockedIn
 
         private void WorkspaceFailed(Exception error)
         {
+            scanDebug?.Write(error.ToString());
             scanDebug?.Finish("Exception: " + error.GetType().Name, null);
             menu.ShowScanDebug(scanDebug);
             Debug.LogError("LockedIn AI scan failed: " + error, this);
