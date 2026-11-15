@@ -38,7 +38,7 @@ namespace LockedIn
             string[] titles = { "1 / 5   Your controls", "2 / 5   Keep your workspace clear", "3 / 5   Choose your surroundings", "4 / 5   Your physical knob", "5 / 5   Adjust and try again" };
             string[] bodies = {
                 "Use the RIGHT controller.\nPoint at a button and squeeze the index-finger trigger to select.\nSqueeze the side grip to open or close Home. Help is always available there.",
-                "Start with Detect Workspace (AI). Look at the whole screen and keyboard, then scan.\nReview the cyan borders. Press right A to accept, or trigger to retry. Right B starts manual placement.",
+                "Start with Detect Workspace (AI). Look at the whole screen and keyboard, then scan.\nReview the cyan borders. Press A to accept, B to edit these borders, or trigger to retry.",
                 "After selecting a workspace, open Home > Choose Background.\nTry Sundowner Overlook, Shanghai Bund, or another environment. Your screen and keyboard stay clear. Photos surround you but are not walkable spaces.\nKnob minimum or right A restores the room.",
                 "Turn the physical knob to adjust your surroundings.\nRoom Blur: more turn adds blur to real camera images outside your workspace. Other backgrounds: more turn adds opacity.\nMinimum or NO SIGNAL restores the room. Keep the Nano powered by USB; it sends directly over Wi-Fi.",
                 "While focusing, right A hides/shows the effect. Right B starts a NEW manual border.\nBorders stay in the room: scan again if you move your laptop.\nRoom Blur needs camera + scene access. A soft camera-derived fill covers unseen surroundings; your workspace stays clear."
@@ -49,7 +49,7 @@ namespace LockedIn
             });
         }
         private void ExplainAI(Action start) => Explain("AI: screen + keyboard",
-            "Look at both objects in good lighting. Point your RIGHT controller from your seat. If several screens are visible, aim at the one you want.\nAllow camera/scene access when asked. Trigger starts the scan; keep your head still.\nA accepts the preview. Trigger retries. B switches to manual. Grip returns to Home.", "Start AI", start);
+            "Look at both objects in good lighting. Point your RIGHT controller from your seat. If several screens are visible, aim at the one you want.\nAllow camera/scene access when asked. Trigger starts the scan; keep your head still.\nA accepts the preview. B edits after a scan. Trigger retries. Grip cancels.", "Start AI", start);
         private void ExplainScreen(Action start) => Explain("Auto Select: screen only",
             "This mode finds screen edges using depth. It does not detect a keyboard separately.\nPoint at the screen CENTER and press the right trigger. A successful scan applies immediately.\nIf edges are unclear, retry or press B for manual placement.", "Start selection", start);
         private void ExplainManual(Action start) => Explain("Manual: place three corners",

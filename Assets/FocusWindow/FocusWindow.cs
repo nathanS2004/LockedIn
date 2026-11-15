@@ -1,4 +1,5 @@
 using UnityEngine;
+using Volume = LockedIn.ScreenDepthSelection.ScreenVolume;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.ARFoundation;
 
@@ -86,6 +87,8 @@ namespace LockedIn
             screenSelection = new ScreenDepthSelection(raycasts);
             menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect,
                 () => BeginWorkspaceDetection(), () => BeginWorkspaceDetection(debug: true));
+            menu.BuildBorderTools(() => SelectBorder(WorkspaceBorder.Screen), () => SelectBorder(WorkspaceBorder.Keyboard),
+                RemoveDraftBorder, UndoDraftBorder, ApplyDraftBorders, CancelWorkspaceDetection);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -167,8 +170,22 @@ namespace LockedIn
                 return;
             }
 
+            if (borderDraft != null)
+            {
+                UpdateBorderEdit(hasRay, pointerRay, pressed);
+                return;
+            }
+
             if (reset.WasPressedThisFrame())
+            {
+                if (selectingWorkspace && workspacePreview != null)
+                {
+                    BeginBorderEdit();
+                    RenderMask(false, default, true);
+                    return;
+                }
                 BeginBorder();
+            }
 
             if (selectingWorkspace)
             {
@@ -400,7 +417,21 @@ namespace LockedIn
 
         private void RenderMask(bool showPreview, Vector3 probe, bool suppressBackground = false)
         {
-            bool review = selectingWorkspace && workspacePreview != null && workspacePreview.Volumes.Count > 0;
+            bool review = selectingWorkspace && (workspacePreview != null || borderDraft != null);
+            Volume? firstPreview = null, secondPreview = null;
+            int activePreview = 0;
+            if (borderDraft != null)
+            {
+                firstPreview = borderDraft.Screen ?? borderDraft.Keyboard;
+                secondPreview = borderDraft.Screen.HasValue ? borderDraft.Keyboard : null;
+                if (borderDraft.Get(activeBorder).HasValue)
+                    activePreview = activeBorder == WorkspaceBorder.Keyboard && secondPreview.HasValue ? 2 : 1;
+            }
+            else if (workspacePreview != null)
+            {
+                firstPreview = workspacePreview.Volumes[0];
+                if (workspacePreview.Volumes.Count > 1) secondPreview = workspacePreview.Volumes[1];
+            }
             bool showBackground = dimEnabled && !suppressBackground;
 
             Color color = Color.black;
@@ -431,17 +462,17 @@ namespace LockedIn
             mask.SetFloat("_HasSecondWindow", hasKeyboardWindow ? 1f : 0f);
             if (hasKeyboardWindow)
                 SetVolume("_Second", keyboardWindow);
+            mask.SetFloat("_ActiveReviewBorder", activePreview);
             if (review)
             {
-                SetVolume("_Window", workspacePreview.Volumes[0]);
-                bool second = workspacePreview.Volumes.Count > 1;
-                mask.SetFloat("_HasSecondWindow", second ? 1f : 0f);
-                if (second) SetVolume("_Second", workspacePreview.Volumes[1]);
+                if (firstPreview.HasValue) SetVolume("_Window", firstPreview.Value);
+                mask.SetFloat("_HasSecondWindow", secondPreview.HasValue ? 1f : 0f);
+                if (secondPreview.HasValue) SetVolume("_Second", secondPreview.Value);
             }
             mask.SetFloat("_UsePanorama", panorama != null ? 1f : 0f);
             mask.SetColor("_BackgroundColor", color);
             mask.SetFloat("_Dimming", opacity);
-            mask.SetFloat("_HasWindow", windowPlaced || review ? 1f : 0f);
+            mask.SetFloat("_HasWindow", (review ? firstPreview.HasValue : windowPlaced) ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetVector("_Probe", probe);
         }
