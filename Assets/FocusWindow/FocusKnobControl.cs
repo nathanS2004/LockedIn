@@ -39,8 +39,8 @@ namespace LockedIn
                 string mode = background == BackgroundStyle.RoomBlur ? "Room blur" : "Environment";
                 string detail = background == BackgroundStyle.RoomBlur ? "\n" +
                     (!windowPlaced ? "Select a workspace first" : roomBlur.Status) : "";
-                menu?.SetKnobStatus($"{mode} {opacity * 100:0}% | {state}" +
-                    (windowPlaced && !dimEnabled && background != BackgroundStyle.Passthrough ? " | BYPASS" : "") + detail);
+                menu?.SetFocusState(opacity, mode, state,
+                    windowPlaced && !dimEnabled && background != BackgroundStyle.Passthrough, detail, windowPlaced);
                 nextKnobStatus = Time.unscaledTime + 0.2f;
             }
             return opacity;

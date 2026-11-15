@@ -58,7 +58,7 @@ Binary assets and patched Meta SDKs have been restored locally. On a fresh check
 python Tools/restore_full_app.py
 ```
 
-This restores the five licensed background JPEGs, verifies Meta Core
+This restores the six active background JPEGs, verifies Meta Core
 and MRUK 85 archives against registry hashes, applies the complete app's existing
 Unity 6.6 compatibility repairs, and validates the pinned YOLO model size/blob hash.
 Downloads/embedded SDKs are ignored by Git; the scripts and license notices are
