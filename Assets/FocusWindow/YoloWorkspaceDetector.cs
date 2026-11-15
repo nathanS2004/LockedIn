@@ -11,6 +11,8 @@ namespace LockedIn
 {
     internal sealed class YoloWorkspaceDetector : IWorkspaceDetector
     {
+        private const float StrongScreenConfidence = 0.65f;
+        private const float ScreenAimTolerance = 0.06f;
         private readonly Transform head;
         private readonly ScreenDepthSelection depth;
         private GameObject cameraObject;
@@ -138,49 +140,81 @@ namespace LockedIn
         private IEnumerator FitDetections(List<WorkspaceBox> detections, Ray aim,
             Action<WorkspaceDetection> complete, WorkspaceScanDebug debug)
         {
-            WorkspaceBox? primary = null;
-            float best = float.PositiveInfinity;
+            int screenCount = 0;
+            foreach (WorkspaceBox box in detections)
+                if (box.ClassId != 66) screenCount++;
+
+            if (screenCount == 0)
+            {
+                complete(new WorkspaceDetection { Message = "No screen detected in the camera view" });
+                yield break;
+            }
+
+            WorkspaceBox screen = default;
+            ScreenDepthSelection.ScreenVolume? fittedScreen = null;
+            int fittedCount = 0;
+            float bestMiss = float.PositiveInfinity;
+            float bestDistance = float.PositiveInfinity;
             foreach (WorkspaceBox box in detections)
             {
                 if (box.ClassId == 66) continue;
-                Ray ray = ImageRay(box.Rect.center);
-                // Prefer the screen closest to the user's controller aim, then confidence.
-                float angle = Vector3.Angle(aim.direction, ray.direction);
-                float score = angle - box.Score * 5f;
-                debug?.Record($"screen candidate #{debug.BoxNumber(box)}: aim angle {angle:F1} deg, adjusted {score:F1}");
-                if (score >= best) continue;
-                best = score;
-                primary = box;
+                int number = debug?.BoxNumber(box) ?? 0;
+                Rect screenRect = box.Rect;
+                if (box.ClassId == 63) screenRect.height *= 0.62f;
+                ScreenDepthSelection.ScreenVolume? fit = null;
+                yield return depth.FindScreen(ImageRay(screenRect.center), capturePose.position,
+                    capturePose.rotation * Vector3.right, volume => fit = volume);
+                debug?.Record($"screen candidate #{number}: depth edge scan passed={fit.HasValue}");
+                if (!fit.HasValue && WorkspaceGeometry.TryFit(screenRect, false, ImageRay, depth, out var fallback, debug))
+                    fit = fallback;
+
+                if (Vector3.Distance(head.position, captureHeadPosition) > 0.08f ||
+                    Quaternion.Angle(head.rotation, captureHeadRotation) > 10f)
+                {
+                    complete(new WorkspaceDetection { Message = "Head moved while fitting. Try again." });
+                    yield break;
+                }
+                debug?.Record($"screen candidate #{number}: depth fit passed={fit.HasValue}");
+                if (!fit.HasValue) continue;
+                fittedCount++;
+
+                // Depth independently verifies the only strong screen. The review still
+                // requires confirmation, so the controller can stay at normal reach.
+                if (screenCount == 1 && box.Score >= StrongScreenConfidence)
+                {
+                    screen = box;
+                    fittedScreen = fit;
+                    debug?.Record($"selected screen candidate #{number}: single strong detection verified by depth");
+                    break;
+                }
+
+                if (!WorkspaceGeometry.TryMeasureScreenAim(aim, fit.Value, out float distance, out float miss))
+                {
+                    debug?.Record($"screen candidate #{number}: controller ray did not reach the screen plane");
+                    continue;
+                }
+                debug?.Record($"screen candidate #{number}: controller miss {miss:F3} m, ray distance {distance:F3} m");
+                if (miss > ScreenAimTolerance || miss > bestMiss ||
+                    (miss == bestMiss && distance >= bestDistance)) continue;
+
+                // A hit has zero miss. If two screens overlap along the ray, the nearer one wins.
+                bestMiss = miss;
+                bestDistance = distance;
+                screen = box;
+                fittedScreen = fit;
             }
-            if (!primary.HasValue || best > 30f)
-            {
-                complete(new WorkspaceDetection { Message = "No screen found near your aim" });
-                yield break;
-            }
-            WorkspaceBox screen = primary.Value;
-            debug?.Record($"selected screen candidate #{debug.BoxNumber(screen)}");
-            bool laptop = screen.ClassId == 63;
-            Rect screenRect = screen.Rect;
-            if (laptop) screenRect.height *= 0.62f;
-            ScreenDepthSelection.ScreenVolume? fittedScreen = null;
-            // Reuse the user-tested edge scan to refine the image box to the actual display surface.
-            yield return depth.FindScreen(ImageRay(screenRect.center), capturePose.position,
-                capturePose.rotation * Vector3.right, volume => fittedScreen = volume);
-            debug?.Record($"screen depth edge scan passed={fittedScreen.HasValue}");
-            if (!fittedScreen.HasValue && WorkspaceGeometry.TryFit(screenRect, false, ImageRay, depth, out var fallback, debug))
-                fittedScreen = fallback;
+
             if (!fittedScreen.HasValue)
             {
-                complete(new WorkspaceDetection { Message = "Screen recognized; depth edges unclear" });
+                string message = fittedCount == 0 ? "Screen recognized; depth edges unclear" :
+                    "Point at the screen you want and scan again";
+                complete(new WorkspaceDetection { Message = message });
                 yield break;
             }
-            if (Vector3.Distance(head.position, captureHeadPosition) > 0.08f ||
-                Quaternion.Angle(head.rotation, captureHeadRotation) > 10f)
-            {
-                complete(new WorkspaceDetection { Message = "Head moved while fitting. Try again." });
-                yield break;
-            }
-            debug?.Record($"screen depth fit passed={fittedScreen.HasValue}");
+
+            if (!float.IsPositiveInfinity(bestMiss))
+                debug?.Record($"selected screen candidate #{debug.BoxNumber(screen)}: controller ray, miss {bestMiss:F3} m");
+            bool laptop = screen.ClassId == 63;
             var result = new WorkspaceDetection();
             result.Volumes.Add(fittedScreen.Value);
             Vector3 screenCenter = WorkspaceGeometry.Center(fittedScreen.Value);

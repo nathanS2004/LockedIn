@@ -22,3 +22,13 @@ Persistence and USB export still need verification on the rebuilt APK.
 ## Integration with the room backgrounds
 
 Scan Debug uses the same detection flow as standard scanning. Starting a debug scan stops room blur while the scan runs, and pausing the app still suspends the selected environment. Scan diagnostics are available alongside the physical knob and the expanded panorama picker.
+
+## Screen selection from normal reach
+
+A single screen or laptop proposal with a confidence of at least 0.65 goes straight to depth verification. Hold the controller comfortably and keep the workspace in the camera view. When there are several screen candidates (or one weaker candidate), aim at the display you want. The app intersects the controller ray with each depth-fitted display plane, favors a hit over a near miss, and chooses the nearest hit when displays overlap along the ray. An aim up to 6 cm outside the fitted border is eligible. The cyan preview still requires A to accept.
+
+Depth serves as the second check. The app tries an edge scan, then falls back to a plane fit from depth samples. This keeps one YOLO inference per trigger. The debug log names the selection method and records depth failures and controller misses in meters. The existing laptop-base estimate still runs when a separate keyboard is unavailable.
+
+The previous device log showed 16 single strong laptop detections rejected by the angle cutoff. All 16 now qualify for depth verification. That replay checks eligibility only. It cannot tell whether the depth fit would pass on those frames.
+
+On Quest, repeat ten scans from your seat with a single laptop, then try scanning toward each of two visible screens. Check that the intended screen is outlined and press A to accept. Compare the result counts with the former 3 of 21 successful scans. Confirm the log distinguishes a single strong detection from a controller-ray selection.

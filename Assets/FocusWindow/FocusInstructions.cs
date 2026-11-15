@@ -49,7 +49,7 @@ namespace LockedIn
             });
         }
         private void ExplainAI(Action start) => Explain("AI: screen + keyboard",
-            "Look at both objects in good lighting. Point your RIGHT controller at the screen.\nAllow camera/scene access when asked. Trigger starts the scan; keep your head still.\nA accepts the preview. Trigger retries. B switches to manual. Grip returns to Home.", "Start AI", start);
+            "Look at both objects in good lighting. Point your RIGHT controller from your seat. If several screens are visible, aim at the one you want.\nAllow camera/scene access when asked. Trigger starts the scan; keep your head still.\nA accepts the preview. Trigger retries. B switches to manual. Grip returns to Home.", "Start AI", start);
         private void ExplainScreen(Action start) => Explain("Auto Select: screen only",
             "This mode finds screen edges using depth. It does not detect a keyboard separately.\nPoint at the screen CENTER and press the right trigger. A successful scan applies immediately.\nIf edges are unclear, retry or press B for manual placement.", "Start selection", start);
         private void ExplainManual(Action start) => Explain("Manual: place three corners",
