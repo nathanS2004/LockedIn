@@ -26,7 +26,9 @@ namespace LockedIn
         private readonly Font font, headingFont;
         private readonly RectTransform calibration;
         private readonly Text calibrationTitle, calibrationHint;
-        private readonly Text dialValue, dialState, workspaceState, effectDetail;
+        private readonly Text dialValue, dialState, workspaceState, effectDetail, workspaceIntro;
+        private readonly Action detectWorkspaceAction;
+        private bool workspaceReady;
         private readonly FocusDialGraphic dial;
         private readonly CanvasGroup pageFade;
         private readonly FocusUiMotion motion;
@@ -56,6 +58,7 @@ namespace LockedIn
         public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder,
             Action autoSelect, Action detectWorkspace)
         {
+            detectWorkspaceAction = detectWorkspace;
             font = Resources.Load<Font>("LockedIn/Interface/Fonts/Barlow-Regular") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             headingFont = Resources.Load<Font>("LockedIn/Interface/Fonts/BarlowCondensed-SemiBold") ?? font;
             panel = CreateRect("LockedIn / focus console", camera, new Vector2(960, 660), Vector2.zero);
@@ -78,8 +81,8 @@ namespace LockedIn
             backgrounds = CreateRect("Environment collection", pages, panel.sizeDelta, Vector2.zero);
             AddText(home, "01 / WORKSPACE", new Vector2(470, 26), new Vector2(-197, 211), 18, Accent);
             Heading(home, "Set your\nstudy space.", new Vector2(490, 160), new Vector2(-187, 115), 68);
-            AddText(home, "Keep your screen clear. Leave the rest behind.", new Vector2(490, 35), new Vector2(-187, 13), 21, Muted);
-            AddAction(home, "01", "Detect workspace", "Find your screen + keyboard with AI", new Vector2(-187, -57), () => ExplainAI(detectWorkspace), true);
+            workspaceIntro = AddText(home, "Start by detecting your screen + keyboard.", new Vector2(490, 35), new Vector2(-187, 13), 21, Muted);
+            AddAction(home, "01", "Detect workspace", "START HERE / Find your screen + keyboard", new Vector2(-187, -57), () => ExplainAI(detectWorkspace), true);
             AddAction(home, "02", "Find screen edges", "Select a screen using depth", new Vector2(-187, -135), () => ExplainScreen(autoSelect));
             AddAction(home, "03", "Place a border", "Mark three corners by hand", new Vector2(-187, -213), () => ExplainManual(createBorder));
             Rule(home, new Vector2(95, -1), new Vector2(1, 444), Line);
@@ -98,7 +101,7 @@ namespace LockedIn
             AddText(dialRect, "INTENSITY", new Vector2(110, 22), new Vector2(0, -30), 14, Muted, alignment: TextAnchor.MiddleCenter);
             dialState = AddText(home, "NO SIGNAL", new Vector2(135, 30), new Vector2(363, -60), 18, Ink);
             effectDetail = AddText(home, "Turn your knob.\nEase into focus.", new Vector2(135, 84), new Vector2(363, -112), 19, Muted);
-            workspaceState = AddText(home, "Workspace / not selected", new Vector2(300, 30), new Vector2(282, -192), 18, Muted);
+            workspaceState = AddText(home, "Select a workspace first.\nPreview is limited to 45%.", new Vector2(300, 46), new Vector2(282, -187), 18, Accent);
             AddItem(home, "Controls & field guide  >", new Vector2(300, 38), new Vector2(282, -229), StartWalkthrough);
 
             AddText(backgrounds, "02 / ENVIRONMENT COLLECTION", new Vector2(550, 28), new Vector2(-157, 211), 18, Accent);
@@ -133,13 +136,18 @@ namespace LockedIn
 
         public void SetFocusState(float amount, string mode, string state, bool bypass, string detail, bool ready)
         {
+            bool readinessChanged = workspaceReady != ready;
+            workspaceReady = ready;
             targetAmount = Mathf.Clamp01(amount);
             bool live = state.StartsWith("LIVE", StringComparison.OrdinalIgnoreCase);
             string shortState = bypass ? "BYPASS" : live ? "LIVE" : state == "CONTROLLER MODE" ? "CONTROLLER" : "NO SIGNAL";
             dialState.text = shortState; dialState.color = live && !bypass ? new Color32(56, 111, 73, 255) : Ink;
             effectDetail.text = !string.IsNullOrWhiteSpace(detail) ? detail.Trim() : live ? "Turn your knob.\nEase into focus." : "Keep Nano powered.\nWi-Fi connects directly.";
             effectDetail.resizeTextForBestFit = true; effectDetail.resizeTextMinSize = 16; effectDetail.resizeTextMaxSize = 19;
-            workspaceState.text = ready ? "Workspace / ready to focus" : "Workspace / not selected";
+            workspaceState.text = ready ? "Workspace / ready to focus" : "Select a workspace first.\nPreview is limited to 45%.";
+            workspaceState.color = ready ? Muted : Accent;
+            workspaceIntro.text = ready ? "Keep your screen clear. Leave the rest behind." : "Start by detecting your screen + keyboard.";
+            if (readinessChanged) RefreshPhotos(previewStyle);
         }
         public void ShowCalibration(string title, string hint) { calibrationTitle.text = title; calibrationHint.text = hint; calibrationActive = true; SetCalibrationVisible(true); }
         public void HideCalibration() { calibrationActive = false; SetCalibrationVisible(false); }
@@ -216,6 +224,7 @@ namespace LockedIn
         }
         private void ShowBackgrounds(bool show)
         {
+            if (show && !workspaceReady) { ExplainWorkspaceRequired(); return; }
             if (instructions != null) instructions.gameObject.SetActive(false);
             home.gameObject.SetActive(!show); backgrounds.gameObject.SetActive(show);
             pageFade.alpha = 0; lastHovered = null;
@@ -242,7 +251,7 @@ namespace LockedIn
             int chosen = Array.IndexOf(Styles, currentStyle);
             if (chosen >= 0)
             {
-                homePhotoTitle.text = Names[chosen];
+                homePhotoTitle.text = workspaceReady ? Names[chosen] : "Set up workspace first";
                 if (!previews.TryGetValue(currentStyle, out Texture2D selectedTexture))
                 {
                     selectedTexture = ResourcesNames[chosen].Length == 0 ? null : Resources.Load<Texture2D>("LockedIn/Interface/Previews/" + ResourcesNames[chosen]);
@@ -250,7 +259,7 @@ namespace LockedIn
                 }
                 homePhoto.texture = selectedTexture; homePhoto.color = selectedTexture == null ? Selected : Color.white;
             }
-            else { homePhoto.texture = texture; homePhoto.color = texture == null ? Selected : Color.white; }
+            else { homePhoto.texture = texture; homePhoto.color = texture == null ? Selected : Color.white; homePhotoTitle.text = workspaceReady ? "Choose surroundings" : "Set up workspace first"; }
         }
         private void AddAction(RectTransform parent, string number, string title, string subtitle, Vector2 position, Action activate, bool primary = false)
         {
@@ -338,7 +347,11 @@ namespace LockedIn
                 Click(307, -218); Check(detected == 1, "AI callback did not fire exactly once");
                 menu.ShowBackgrounds(false); Click(-187, -135); Click(307, -218); Check(depth == 1, "Depth callback failed");
                 menu.ShowBackgrounds(false); Click(-187, -213); Click(307, -218); Check(manual == 1, "Manual callback failed");
-                menu.ShowBackgrounds(false); Click(282, 104); Check(menu.backgrounds.gameObject.activeSelf, "Photo tile did not open collection");
+                menu.ShowBackgrounds(false); Click(282, 104);
+                Check(menu.instructions.gameObject.activeSelf && !menu.backgrounds.gameObject.activeSelf && menu.instructionTitle.text == "First, keep your workspace clear.", "Uncalibrated collection was not gated");
+                Click(307, -218); Check(detected == 2, "Setup gate did not start detection");
+                menu.SetFocusState(.64f, "Environment", "LIVE", false, "", true);
+                menu.ShowBackgrounds(false); Click(282, 104); Check(menu.backgrounds.gameObject.activeSelf, "Accepted workspace did not unlock collection");
                 for (int i = 0; i < Styles.Length; i++) Click(187, 104 - i * 48);
                 Check(chosen == 7, "Not all seven environments were selectable");
                 Click(-165, -232); Check(menu.instructionTitle.text == "The view, credited.", "Image credits inaccessible");
@@ -355,7 +368,7 @@ namespace LockedIn
                 Check(menu.IsOpen && menu.home.gameObject.activeSelf, "Grip reopening did not reset Home");
                 int total = detected + depth + manual + chosen;
                 Click(900, 900); Check(total == detected + depth + manual + chosen, "Outside ray activated a button");
-                return "PASS: controller ray routing, three detector callbacks, seven environments, credits return, five guide slides, calibration visibility, no floating status bar, grip reopen, outside-ray rejection.";
+                return "PASS: controller ray routing, three detector callbacks, workspace prerequisite gate/unlock, seven environments, credits return, five guide slides, calibration visibility, no floating status bar, grip reopen, outside-ray rejection.";
             }
             finally { menu.Dispose(); }
         }
@@ -365,9 +378,10 @@ namespace LockedIn
         {
             var menu = new FocusHomeMenu(camera.transform, _ => { }, () => { }, () => { }, () => { });
             menu.currentStyle = BackgroundStyle.SecludedBeach;
+            bool ready = page != "setup";
+            menu.SetFocusState(ready ? .64f : 0, "Environment", ready ? "LIVE" : "NO SIGNAL", false, "", ready);
             menu.ShowBackgrounds(page == "collection");
             if (page == "guide") { menu.walkthroughPage = 3; menu.ShowWalkthrough(); }
-            menu.SetFocusState(0.64f, "Environment", "LIVE", false, "", true);
             for (int i = 0; i < 60; i++) menu.Animate(1 / 60f);
             return menu;
         }

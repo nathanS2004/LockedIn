@@ -23,3 +23,9 @@ Controller hit-testing and callbacks remain native. Hover transitions, press ret
 The first capture exposed a heading clipped by its text rectangle and photos not yet imported. Heading bounds and preview asset readiness were corrected before the final visual review. The visual pass also caught and fixed a missing CanvasRenderer requirement on the custom dial; final Unity captures show both dial faces rendering correctly. The existing Windows Burst code-integrity warning is unrelated to these UI changes.
 
 An updated Quest build, stereo readability/performance, physical haptics and presentation rehearsal remain to be verified on the headset. See [interface design and rebuild steps](../interface-design.md).
+
+## Follow-up: make workspace setup explicit
+
+Home now starts with a detection prompt, labels the primary action START HERE, and explains that uncalibrated previews stop at 45%. Attempting to open the environment collection before a workspace is accepted routes to an explanation and Detect workspace action. Depth/manual alternatives remain on Home. A ready workspace unlocks the collection; the existing opacity cap, detection and signal clearing logic are unchanged. The ray-navigation fixture now checks the blocked route, its detection callback, and successful collection access after readiness.
+
+Follow-up validation: runtime/AI/editor compilation and all 53 existing checks passed. Unity's updated ray fixture passed the prerequisite gate and readiness unlock, and the startup render was visually reviewed in `docs/previews/lockedin-setup.png`. Headset installation still requires Build And Run.

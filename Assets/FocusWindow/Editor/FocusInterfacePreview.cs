@@ -27,7 +27,7 @@ namespace LockedIn.Editor
             MethodInfo factory = type?.GetMethod("CreateEditorPreview", BindingFlags.Public | BindingFlags.Static);
             if (factory == null) { Debug.LogWarning("Recompile the interface before capturing previews."); return; }
             Directory.CreateDirectory("docs/previews");
-            foreach (string page in new[] { "home", "collection", "guide" })
+            foreach (string page in new[] { "home", "setup", "collection", "guide" })
             {
                 var root = new GameObject("LockedIn temporary preview camera") { hideFlags = HideFlags.HideAndDontSave };
                 var camera = root.AddComponent<Camera>(); camera.enabled = false;

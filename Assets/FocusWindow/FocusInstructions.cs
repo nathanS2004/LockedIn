@@ -81,6 +81,9 @@ namespace LockedIn
         private void ShowCredits() => Explain("The view, credited.",
             "Poly Haven / CC0: Sundowner Overlook, Secluded Beach, Shanghai Bund, Sunrise Beach.\nLibrary: Waldyrious, Biblioteca Publica de Evora / CC BY-SA 4.0. Preview is resized and cropped.\nDeep Space: NASA/Goddard SVS, Ernie Wright & Tom Bridgman. No endorsement.\nFonts: Barlow & Barlow Condensed / SIL Open Font License. Full sources and licenses are included with the app.",
             "Back to collection", () => ShowBackgrounds(true));
+        private void ExplainWorkspaceRequired() => Explain("First, keep your workspace clear.",
+            "Detect your screen and keyboard before choosing surroundings.\n\nLook at both, scan, then press right A to accept the cyan borders. This unlocks the collection and the knob's full 0-100% range.\n\nBefore setup, photo previews stop at 45% and Room Blur stays off. Prefer another method? Return Home for depth selection or manual borders.",
+            "Detect workspace", detectWorkspaceAction);
         private void ExplainAI(Action start) => Explain("AI: screen + keyboard",
             "Look at both objects in good lighting. Point your RIGHT controller at the screen.\nAllow camera/scene access when asked. Trigger starts the scan; keep your head still.\nA accepts the preview. Trigger retries. B switches to manual. Grip returns to Home.", "Start AI", start);
         private void ExplainScreen(Action start) => Explain("Auto Select: screen only",

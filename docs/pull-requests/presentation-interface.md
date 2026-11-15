@@ -9,3 +9,5 @@ Preserve AI screen/keyboard detection, depth selection, manual calibration, Nano
 Validation: runtime, Android AI and editor compilation; 53 existing checks; Unity import without red errors; editor ray-navigation fixture across detector/environment/help routes. Quest rebuild, stereo readability, frame timing and physical controller feedback require headset validation. Preview screenshots use an explicitly documented editor-only sample signal.
 
 Stacked on `feature/secluded-beach-space` so the PR contains only the interface pass.
+
+Workspace setup is now an explicit prerequisite: Home starts with a detection prompt and a visible 45% preview explanation. Choosing surroundings before acceptance opens a setup explanation and a Detect workspace action instead of the collection. AI acceptance, depth selection or a completed manual border unlocks all backgrounds and full knob range. The opacity watchdog and preview limit remain unchanged.

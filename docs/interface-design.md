@@ -33,7 +33,9 @@ The vector knob face is ordinary UI geometry. Animation uses unscaled time and n
 
 These are real Unity UI renders using an **editor-only sample 64% LIVE state**, rather than headset captures.
 
-![Home console](previews/lockedin-home.png)
+![Startup workspace prerequisite](previews/lockedin-setup.png)
+
+![Home console after workspace setup](previews/lockedin-home.png)
 
 ![Environment collection](previews/lockedin-collection.png)
 
@@ -42,3 +44,5 @@ These are real Unity UI renders using an **editor-only sample 64% LIVE state**, 
 ## Validation limits
 
 `python tools/verify_workspace.py` compiles runtime, optional AI backend and editor source and checks geometry, opacity, UDP protocol and camera projection. It does not certify stereo readability, GPU cost or controller haptics on Quest. Native screenshots and the interaction fixture supplement those checks; an updated headset build still needs physical presentation rehearsal.
+
+Workspace setup is now an explicit prerequisite: Home starts with a detection prompt and a visible 45% preview explanation. Choosing surroundings before acceptance opens a setup explanation and a Detect workspace action instead of the collection. AI acceptance, depth selection or a completed manual border unlocks all backgrounds and full knob range. The opacity watchdog and preview limit remain unchanged.
