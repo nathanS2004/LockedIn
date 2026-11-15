@@ -6,10 +6,10 @@ The user confirmed that the depth-only Auto Select Screen feature worked well on
 
 1. Exit Play Mode, return to Unity, and let the scripts import. Use Assets > Refresh if the new menu is missing.
 2. Choose **LockedIn > Set Up AI Workspace Detection** in Unity's top menu.
-3. The setup downloads Meta's 2.4 MB pretrained model, verifies its exact Git blob digest, and installs Meta MR Utility Kit 85.0.0 plus Unity Inference Engine 2.2.1 through Package Manager. These versions match Meta's sample. It enables the Meta XR OpenXR feature and the `LOCKEDIN_AI` Android compilation symbol. Wait for compilation and the **LockedIn AI setup complete** Console message.
+3. The setup downloads Meta's 2.4 MB pretrained model, verifies its exact Git blob digest, and installs Meta MR Utility Kit 85.0.0, Sentis (Unity Inference Engine) 2.6.1, and Unity's built-in AssetBundle module through Package Manager. Sentis 2.6.1 is the released version for Unity 6.6; the sample's older 2.2.1 pin caused a compiler compatibility error. It enables the Meta XR OpenXR feature and the `LOCKEDIN_AI` Android compilation symbol. Wait for compilation and the **LockedIn AI setup complete** Console message.
 4. Build and Run with `Assets/Scenes/LockedInPassthrough.unity` first in the scene list. The existing XR Origin and Unity passthrough/raycast components remain in use.
 
-The packages and model were **not installed during this implementation session**: direct external downloads were unavailable and permission escalation was rejected by the execution environment. The menu command is provided for the developer to run in Unity. Until setup is complete, the app explains that AI setup is needed; manual calibration and depth-only selection remain available.
+The initial implementation session could not download the dependencies directly, so the setup command was provided for the developer to run in Unity. The developer subsequently ran it: the model downloaded correctly, but package compilation exposed the Unity 6.6 compatibility errors documented below. Until setup completes successfully, the app explains that AI setup is needed; manual calibration and depth-only selection remain available once the project compiles.
 
 ## In the headset
 
@@ -34,7 +34,7 @@ The packages and model were **not installed during this implementation session**
 
 Passed locally: fallback runtime C# compilation with Android permission paths enabled, Unity Editor setup/build-hook compilation, and 13 geometry/filter checks against installed Unity assemblies. Checks cover nested keyboards, duplicate screen suppression, weak/irrelevant/NaN detections, upright versus horizontal plane fitting, insufficient depth, and one outlying depth sample.
 
-Run `python Tools/verify_workspace.py` from the project root to reproduce these checks. This script does **not** compile the optional YOLO backend against the new packages or validate the shader on the headset.
+Run `python Tools/verify_workspace.py` from the project root to reproduce these checks. The script now includes Unity's compatibility analyzers and treats UAC0005 as an error. It also compiles the optional YOLO backend when Unity has produced the real Meta/Sentis dependency assemblies; otherwise it explicitly reports that check as skipped. It does not validate the shader on the headset.
 
 Still required: successful Package Manager import, optional-backend compilation, shader compilation, Android build, camera permissions/pose alignment, and live headset accuracy/performance. Test screen-only results, external and built-in keyboards, denied permission, cancellation, rescanning, and regression of manual/Auto Select Screen modes. This is a prototype with rectangular volumes, not pixel-accurate segmentation or tracking of moving devices. World positions are session-local, not saved spatial anchors across launches.
 
@@ -47,3 +47,19 @@ Still required: successful Package Manager import, optional-backend compilation,
 - Local downloaded asset: `Assets/Resources/LockedIn/yolov9sentis.sentis` (recreated by setup; not committed).
 - Upstream copyright/license notice: `ThirdPartyNotices/Meta-PassthroughCameraApiSamples-LICENSE.txt`.
 - References: https://developers.meta.com/vr/documentation/unity/unity-sample-camera-object-detection/ and https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/.
+
+## Unity 6.6 compatibility repair — November 14, Phoenix time
+
+The user's Unity Console and Editor log showed `UAC0005` in Inference Engine 2.2.1's `PluginInterfaces.cs` and three `CS1069` errors for `UnityEngine.AssetBundle` in Meta's SDK. The original setup used an old sample dependency pin and omitted a built-in engine module needed by Meta's SDK.
+
+Changes:
+
+- Updated the project manifest and setup command to Sentis 2.6.1. Its package source uses `CurrentAssemblies.GetLoadedAssemblies()` on modern Unity instead of the incompatible `AppDomain.GetAssemblies()` call.
+- Added `com.unity.modules.assetbundle` 1.0.0 to the manifest and setup command.
+- Updated our setup script to use Unity's current assembly enumeration API too.
+- Added Unity's actual API-compatibility analyzers to the local verifier and confirmed that a probe using the old API triggers UAC0005. The corrected script compiles without that diagnostic.
+- Verified the downloaded 2,365,288-byte model against its pinned Git blob digest.
+
+The shared runtime/editor checks and 13 geometry/filter checks pass. The Unity Package Manager reimport, optional-backend compilation, shader compilation, and Android/headset test must finish before claiming end-to-end success. Return to Unity, refresh, let it resolve the updated manifest, rerun the LockedIn setup command if needed, and then Build and Run.
+
+Unity version reference: https://docs.unity.com/en-us/engine/6000.6/manual/packages-list/packages-all/pack-safe/com-unity-ai-inference

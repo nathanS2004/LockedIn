@@ -8,6 +8,7 @@ using UnityEditor.Build;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.Networking;
 using UnityEngine.XR.OpenXR;
 
@@ -59,8 +60,11 @@ namespace LockedIn.Editor
             AssetDatabase.Refresh();
             SessionState.SetBool(Pending, true);
             SessionState.SetFloat(Deadline, (float)EditorApplication.timeSinceStartup + 600f);
-            packages = Client.AddAndRemove(new[] { "com.meta.xr.mrutilitykit@85.0.0", "com.unity.ai.inference@2.2.1" });
-            Debug.Log("LockedIn: Installing Meta MR Utility Kit 85.0.0 and Unity Inference Engine 2.2.1. Unity may reload scripts.");
+            packages = Client.AddAndRemove(new[] {
+                "com.meta.xr.mrutilitykit@85.0.0", "com.unity.ai.inference@2.6.1",
+                "com.unity.modules.assetbundle@1.0.0"
+            });
+            Debug.Log("LockedIn: Installing Meta MR Utility Kit 85.0.0, Sentis 2.6.1, and the AssetBundle module. Unity may reload scripts.");
         }
 
         private static void Tick()
@@ -106,7 +110,7 @@ namespace LockedIn.Editor
             catch (Exception error) { Fail(error.Message); }
         }
 
-        private static Type FindType(string name) => AppDomain.CurrentDomain.GetAssemblies()
+        private static Type FindType(string name) => CurrentAssemblies.GetLoadedAssemblies()
             .Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
 
         private static void Configure()
