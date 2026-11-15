@@ -63,6 +63,24 @@ internal static class WorkspaceGeometryChecks
         keyboardPoints[0] += new Vector3(0, 0.4f, 0);
         Check(WorkspaceGeometry.TryFitPoints(keyboardRect, true, imageRay, keyboardPoints, out _), "Tolerate one hand/depth outlier.");
         Check(!WorkspaceGeometry.TryFitPoints(screenRect, false, imageRay, new List<Vector3> { Vector3.zero }, out _), "Reject insufficient depth.");
+        var draft = new WorkspaceBorderDraft(screen, board);
+        var expanded = WorkspaceBorderDraft.Adjust(board, BorderHandle.Bottom, new Vector2(0.2f, -0.08f));
+        Check(Mathf.Abs(expanded.Min.y - board.Min.y + 0.08f) < 0.001f &&
+            expanded.Max == board.Max && expanded.Origin == board.Origin, "Resize a keyboard edge on its plane.");
+        var clamped = WorkspaceBorderDraft.Adjust(board, BorderHandle.Bottom, new Vector2(0, 3));
+        Check(Mathf.Abs(clamped.Max.y - clamped.Min.y - 0.06f) < 0.001f, "Dragging through the far edge leaves a valid border.");
+        var moved = WorkspaceBorderDraft.Adjust(board, BorderHandle.Move, new Vector2(0.03f, -0.02f));
+        Check(Mathf.Abs(Vector3.Dot(moved.Origin - board.Origin, board.Normal)) < 0.001f &&
+            moved.Min == board.Min && moved.Max == board.Max, "Moving preserves size and stays on plane.");
+        draft.Remember();
+        draft.Set(WorkspaceBorder.Keyboard, expanded);
+        draft.Remember();
+        draft.Set(WorkspaceBorder.Keyboard, null);
+        draft.Undo();
+        Check(draft.Keyboard.HasValue && draft.Keyboard.Value.Min == expanded.Min && draft.Screen.Value.Origin == screen.Origin,
+            "Undo removes only the most recent edit and retains the original screen.");
+        draft.Undo();
+        Check(draft.Keyboard.Value.Min == board.Min && !draft.CanUndo, "Undo restores the original detected keyboard.");
         Console.WriteLine("PASS: " + checks + " workspace filtering and geometry checks.");
         return 0;
     }

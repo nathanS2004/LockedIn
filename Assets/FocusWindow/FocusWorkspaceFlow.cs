@@ -81,17 +81,8 @@ namespace LockedIn
             if (workspaceScan != null) return;
             if (workspacePreview != null && toggle.WasPressedThisFrame())
             {
-                var screen = workspacePreview.Volumes[0];
-                screenOrigin = screen.Origin;
-                screenRight = screen.Right;
-                screenUp = screen.Up;
-                screenNormal = screen.Normal;
-                windowMin = screen.Min;
-                windowMax = screen.Max;
-                hasKeyboardWindow = workspacePreview.Volumes.Count > 1;
-                if (hasKeyboardWindow) keyboardWindow = workspacePreview.Volumes[1];
-                CancelWorkspaceDetection();
-                FinishBorder();
+                var volumes = workspacePreview.Volumes;
+                ApplyWorkspaceBorders(volumes[0], volumes.Count > 1 ? volumes[1] : (ScreenDepthSelection.ScreenVolume?)null);
                 return;
             }
             if (!pressed || !hasRay) return;
@@ -129,7 +120,7 @@ namespace LockedIn
                     menu.ShowScanDebug(scanDebug);
                     menu.ShowCalibration(title, workspacePreview == null
                         ? "Trigger to retry, B for manual. Keep the screen and keyboard in view."
-                        : "A to keep these borders. Trigger to scan again; grip to cancel.");
+                        : "A: accept. B: edit or add borders. Trigger: scan again. Grip: cancel.");
                 }, scanDebug));
             try
             {
@@ -190,6 +181,7 @@ namespace LockedIn
             workspaceDetector?.Dispose();
             workspaceDetector = null;
             workspacePreview = null;
+            ClearBorderEdit();
             ClearScanDebug();
             if (selectingWorkspace) menu?.HideCalibration();
             selectingWorkspace = false;
@@ -206,6 +198,23 @@ namespace LockedIn
         {
             SuspendEnvironment(paused);
             if (paused && workspaceScan != null) CancelWorkspaceDetection();
+        }
+
+        private void ApplyWorkspaceBorders(ScreenDepthSelection.ScreenVolume? screen, ScreenDepthSelection.ScreenVolume? keyboard)
+        {
+            var primary = screen ?? keyboard;
+            if (!primary.HasValue) return;
+            var volume = primary.Value;
+            screenOrigin = volume.Origin;
+            screenRight = volume.Right;
+            screenUp = volume.Up;
+            screenNormal = volume.Normal;
+            windowMin = volume.Min;
+            windowMax = volume.Max;
+            hasKeyboardWindow = screen.HasValue && keyboard.HasValue;
+            if (hasKeyboardWindow) keyboardWindow = keyboard.Value;
+            CancelWorkspaceDetection();
+            FinishBorder();
         }
 
         private void SetVolume(string prefix, ScreenDepthSelection.ScreenVolume volume)

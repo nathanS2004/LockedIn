@@ -81,6 +81,8 @@ Shader "LockedIn/Focus Mask"
                 return smoothstep(-0.006, 0.0, farHit - nearHit);
             }
 
+            float _ActiveReviewBorder;
+
             float4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -88,13 +90,15 @@ Shader "LockedIn/Focus Mask"
                 float3 ray = normalize(input.worldPosition - eye);
                 if (_HasWindow < 0.5 && _Preview < 0.5)
                     return Background(_Dimming, ray, eye);
+                float markerAlpha = 0.0;
                 if (_Preview > 0.5)
                 {
                     float3 delta = _Probe - eye;
                     float depth = dot(delta, ray);
                     float markerDistance = length(delta - depth * ray);
-                    float alpha = depth > 0.0 ? 1.0 - smoothstep(0.003, 0.006, markerDistance) : 0.0;
-                    return float4(float3(0.12, 1.0, 0.75) * alpha, alpha);
+                    markerAlpha = depth > 0.0 ? 1.0 - smoothstep(0.003, 0.006, markerDistance) : 0.0;
+                    if (_Review < 0.5 || _HasWindow < 0.5)
+                        return float4(float3(0.12, 1.0, 0.75) * markerAlpha, markerAlpha);
                 }
 
                 float first = WindowCoverage(eye, ray, _WindowOrigin, _WindowRight, _WindowUp,
@@ -113,8 +117,15 @@ Shader "LockedIn/Focus Mask"
                     if (_HasSecondWindow > 0.5)
                         secondInner = WindowCoverage(eye, ray, _SecondOrigin, _SecondRight, _SecondUp,
                             _SecondNormal, _SecondMin + inset, _SecondMax - inset);
-                    float border = saturate(coverage - max(firstInner, secondInner));
-                    return float4(float3(0.12, 1.0, 0.75) * border, max(border, 0.12 * (1.0 - coverage)));
+                    float firstEdge = saturate(first - firstInner);
+                    float secondEdge = saturate(second - secondInner);
+                    float border = max(firstEdge, secondEdge);
+                    float activeEdge = _ActiveReviewBorder > 1.5 ? secondEdge :
+                        (_ActiveReviewBorder > 0.5 ? firstEdge : 0);
+                    float3 color = lerp(float3(0.12, 1.0, 0.75), float3(1.0, 0.76, 0.22), activeEdge);
+                    float4 outlines = float4(color * border, max(border, 0.12 * (1.0 - coverage)));
+                    return float4(float3(0.95, 0.8, 0.28) * markerAlpha, markerAlpha) +
+                        outlines * (1.0 - markerAlpha);
                 }
                 return Background(_Dimming, ray, eye) * (1.0 - coverage);
             }

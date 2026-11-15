@@ -164,22 +164,27 @@ namespace LockedIn
         }
 
         public void UpdatePointer(bool hasRay, Ray ray, bool pressed, BackgroundStyle selected)
+            => UpdatePointerOnPanel(panel, cursor, hasRay, ray, pressed, selected);
+
+        private bool UpdatePointerOnPanel(RectTransform targetPanel, RectTransform pointer,
+            bool hasRay, Ray ray, bool pressed, BackgroundStyle selected)
         {
             MenuItem hovered = null;
             bool showCursor = false;
-            var plane = new Plane(panel.forward, panel.position);
+            var plane = new Plane(targetPanel.forward, targetPanel.position);
             if (hasRay && plane.Raycast(ray, out float distance))
             {
                 Vector3 hit = ray.GetPoint(distance);
-                Vector2 local = panel.InverseTransformPoint(hit);
-                showCursor = panel.rect.Contains(local);
+                Vector2 local = targetPanel.InverseTransformPoint(hit);
+                showCursor = targetPanel.rect.Contains(local);
                 if (showCursor)
                 {
-                    cursor.anchoredPosition = local;
+                    pointer.anchoredPosition = local;
                     foreach (MenuItem item in items)
                     {
                         RectTransform rect = item.Surface.rectTransform;
-                        if (rect.gameObject.activeInHierarchy && rect.rect.Contains((Vector2)rect.InverseTransformPoint(hit)))
+                        if (rect.IsChildOf(targetPanel) && rect.gameObject.activeInHierarchy &&
+                            rect.rect.Contains((Vector2)rect.InverseTransformPoint(hit)))
                         {
                             hovered = item;
                             break;
@@ -188,16 +193,19 @@ namespace LockedIn
                 }
             }
 
-            cursor.gameObject.SetActive(showCursor);
+            pointer.gameObject.SetActive(showCursor);
             HighlightItem(hovered, selected);
             if (pressed)
                 hovered?.Activate();
+            return showCursor;
         }
 
         public void Dispose()
         {
             if (panel != null)
                 UnityEngine.Object.Destroy(panel.gameObject);
+            if (borderTools != null)
+                UnityEngine.Object.Destroy(borderTools.gameObject);
             if (scanDebugPanel != null)
                 UnityEngine.Object.Destroy(scanDebugPanel.gameObject);
             if (calibration != null)
