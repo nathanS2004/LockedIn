@@ -39,3 +39,10 @@ No NASA endorsement is implied. Constellation overlays are not included.
 The six active panoramas use 2:1 full-sphere mapping. Poly Haven JPEGs are
 tone-mapped photographs imported at 4K with ASTC 6x6. The NASA star panorama
 uses the 16K JPEG source, imported at 8K with ASTC 4x4 to preserve star detail.
+
+Interface previews: resized 512x256 derivatives of the credited panoramas.
+The Library preview remains CC BY-SA 4.0; the gallery center-crops it.
+Fonts: Barlow and Barlow Condensed, Jeremy Tribby, SIL Open Font License 1.1.
+https://github.com/google/fonts/tree/main/ofl/barlow
+https://github.com/google/fonts/tree/main/ofl/barlowcondensed
+Full font licenses: Resources/LockedIn/Interface/Fonts/*-OFL.txt.
