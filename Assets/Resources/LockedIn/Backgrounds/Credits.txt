@@ -1,0 +1,23 @@
+LockedIn photographic panorama credits
+
+Historic Library: Biblioteca Publica de Evora - Sala Nova (360 panorama).
+Photographer: Waldyrious, 6 April 2024.
+Source: https://commons.wikimedia.org/wiki/File:Biblioteca_P%C3%BAblica_de_%C3%89vora_-_Sala_Nova_(360_panorama).jpg
+License: Creative Commons Attribution-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+Original JPEG is included unchanged. Unity scales/compresses it for the headset.
+The scaled/compressed photo remains CC BY-SA 4.0. No endorsement is implied.
+
+Sunrise Beach: Umhlanga Sunrise, Poly Haven.
+https://polyhaven.com/a/umhlanga_sunrise
+https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/umhlanga_sunrise.jpg
+
+Sunny Meadow: Meadow 2, Poly Haven.
+https://polyhaven.com/a/meadow_2
+https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/meadow_2.jpg
+Both nature photos: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+License statement: https://polyhaven.com/license
+
+All three are photographic 360x180 equirectangular still images, not generated art.
+Nature JPEG tone mapping is supplied by Poly Haven. Unity import caps width at
+4096 pixels, preserves 2:1 projection, uses sRGB and Android ASTC 6x6 compression.

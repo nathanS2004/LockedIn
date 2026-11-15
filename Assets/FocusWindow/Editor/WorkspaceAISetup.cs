@@ -60,11 +60,17 @@ namespace LockedIn.Editor
             AssetDatabase.Refresh();
             SessionState.SetBool(Pending, true);
             SessionState.SetFloat(Deadline, (float)EditorApplication.timeSinceStartup + 600f);
-            packages = Client.AddAndRemove(new[] {
+            var requested = new[] {
                 "com.meta.xr.mrutilitykit@85.0.0", "com.unity.ai.inference@2.6.1",
-                "com.unity.modules.assetbundle@1.0.0"
-            });
-            Debug.Log("LockedIn: Installing Meta MR Utility Kit 85.0.0, Sentis 2.6.1, and the AssetBundle module. Unity may reload scripts.");
+                "com.unity.modules.assetbundle@1.0.0",
+                "com.unity.modules.unitywebrequestaudio@1.0.0"
+            };
+            // Embedded SDKs contain our Unity 6.6 compatibility fixes. UPM cannot
+            // add/update them; keep them and let the existing type checks validate import.
+            var installable = requested.Where(package =>
+                !File.Exists(Path.Combine("Packages", package.Split('@')[0], "package.json"))).ToArray();
+            packages = installable.Length > 0 ? Client.AddAndRemove(installable) : null;
+            Debug.Log("LockedIn: Preserving embedded packages and resolving remaining AI dependencies. Unity may reload scripts.");
         }
 
         private static void Tick()

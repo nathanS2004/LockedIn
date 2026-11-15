@@ -34,6 +34,7 @@ namespace LockedIn
 
         private readonly InputAction openMenu = new InputAction(type: InputActionType.Button, binding: RightHand + "grip");
         private FocusHomeMenu menu;
+        private Texture2D panorama;
         private BackgroundStyle background = BackgroundStyle.Dimmed;
         private bool placingBorder;
 
@@ -129,6 +130,7 @@ namespace LockedIn
             adjust.Dispose();
             openMenu.Dispose();
             menu?.Dispose();
+            if (panorama != null) Resources.UnloadAsset(panorama);
             if (overlay != null)
                 Destroy(overlay.gameObject);
             if (mask != null)
@@ -207,7 +209,7 @@ namespace LockedIn
             windowPlaced = false;
             dimEnabled = false;
             placingBorder = true;
-            menu.ShowCalibration("1 / 3   Top-left of the screen", "Line up the cyan dot with the corner and pull the trigger.");
+            menu.ShowCalibration("1 / 3   Top-left of the screen", "Move the controller close to this corner. Right trigger records the cyan dot.");
         }
 
         private void BeginAutoSelect()
@@ -313,7 +315,7 @@ namespace LockedIn
                 case 0:
                     screenOrigin = point;
                     calibrationStep = 1;
-                    menu.ShowCalibration("2 / 3   Top-right of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    menu.ShowCalibration("2 / 3   Top-right of the screen", "Move the controller to this corner. Right trigger records the cyan dot.");
                     break;
                 case 1:
                     Vector3 topEdge = point - screenOrigin;
@@ -327,7 +329,7 @@ namespace LockedIn
                     screenRight = topEdge / width;
                     windowMax.x = width + BorderPadding;
                     calibrationStep = 2;
-                    menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Move the controller to this corner. Right trigger records the cyan dot.");
                     break;
                 case 2:
                     Vector3 side = Vector3.ProjectOnPlane(point - screenOrigin, screenRight);
@@ -344,7 +346,7 @@ namespace LockedIn
                     windowMax.y = BorderPadding;
                     windowMax.z = BorderPadding;
                     calibrationStep = 3;
-                    menu.ShowCalibration("Include the keyboard?", "Trigger at the front of the keyboard, or press A for screen only.");
+                    menu.ShowCalibration("Include the keyboard?", "Move the cyan dot to the keyboard front edge + right trigger. Right A: screen only.");
                     break;
                 case 3:
                     Vector3 delta = point - screenOrigin;
@@ -367,6 +369,20 @@ namespace LockedIn
 
         private void SelectBackground(BackgroundStyle style)
         {
+            string resource = style == BackgroundStyle.Library ? "library" :
+                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" : null;
+            if (style != background)
+            {
+                var next = resource == null ? null : Resources.Load<Texture2D>("LockedIn/Backgrounds/" + resource);
+                if (resource != null && next == null)
+                {
+                    Debug.LogError("LockedIn: panorama missing: " + resource);
+                    return;
+                }
+                mask.SetTexture("_Panorama", next);
+                if (panorama != null && panorama != next) Resources.UnloadAsset(panorama);
+                panorama = next;
+            }
             background = style;
             dimEnabled = style != BackgroundStyle.Passthrough;
         }
@@ -410,6 +426,8 @@ namespace LockedIn
                 mask.SetFloat("_HasSecondWindow", second ? 1f : 0f);
                 if (second) SetVolume("_Second", workspacePreview.Volumes[1]);
             }
+            if (panorama != null) opacity = 1f;
+            mask.SetFloat("_UsePanorama", panorama != null ? 1f : 0f);
             mask.SetColor("_BackgroundColor", color);
             mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
             mask.SetFloat("_HasWindow", windowPlaced || review ? 1f : 0f);

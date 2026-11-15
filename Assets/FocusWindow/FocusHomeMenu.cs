@@ -10,10 +10,13 @@ namespace LockedIn
         Passthrough,
         Dimmed,
         Slate,
-        Forest
+        Forest,
+        Library,
+        Beach,
+        Meadow
     }
 
-    internal sealed class FocusHomeMenu : IDisposable
+    internal sealed partial class FocusHomeMenu : IDisposable
     {
         private static readonly Color Panel = new Color32(15, 22, 32, 255);
         private static readonly Color Card = new Color32(31, 44, 59, 255);
@@ -49,30 +52,39 @@ namespace LockedIn
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             AddText(panel, "LockedIn", new Vector2(556, 58), new Vector2(0, 169), 46, Ink, FontStyle.Bold);
-            AddText(panel, "Right trigger to select  •  Right grip to close", new Vector2(556, 36),
-                    new Vector2(0, -193), 22, Muted, alignment: TextAnchor.MiddleCenter);
+            AddText(panel, "Right trigger to select  •  Right grip to close", new Vector2(600, 36),
+                    new Vector2(0, -193), 18, Muted, alignment: TextAnchor.MiddleCenter);
 
             home = CreateRect("Home", panel, panel.sizeDelta, Vector2.zero);
             backgrounds = CreateRect("Choose Background", panel, panel.sizeDelta, Vector2.zero);
 
-            AddItem(home, "Detect Workspace (AI)", new Vector2(556, 55), new Vector2(0, 100), detectWorkspace);
-            AddItem(home, "Auto Select Screen", new Vector2(556, 55), new Vector2(0, 36), autoSelect);
-            AddItem(home, "Create Border", new Vector2(556, 55), new Vector2(0, -28), createBorder);
+            AddItem(home, "Detect Workspace (AI)", new Vector2(556, 55), new Vector2(0, 100), () => ExplainAI(detectWorkspace));
+            AddItem(home, "Auto Select Screen", new Vector2(556, 55), new Vector2(0, 36), () => ExplainScreen(autoSelect));
+            AddItem(home, "Create Border", new Vector2(556, 55), new Vector2(0, -28), () => ExplainManual(createBorder));
             AddItem(home, "Choose Background", new Vector2(556, 55), new Vector2(0, -92),
-                    () => ShowBackgrounds(true));
+                    () => ExplainBackgrounds());
+
+            AddItem(home, "How to use LockedIn", new Vector2(556, 42), new Vector2(0, -148), StartWalkthrough);
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);
-            AddItem(backgrounds, "Passthrough", new Vector2(268, 62), new Vector2(-144, 49),
-                    () => choose(BackgroundStyle.Passthrough), BackgroundStyle.Passthrough);
-            AddItem(backgrounds, "Dim Room", new Vector2(268, 62), new Vector2(144, 49),
-                    () => choose(BackgroundStyle.Dimmed), BackgroundStyle.Dimmed);
-            AddItem(backgrounds, "Slate Blue", new Vector2(268, 62), new Vector2(-144, -27),
-                    () => choose(BackgroundStyle.Slate), BackgroundStyle.Slate);
-            AddItem(backgrounds, "Forest Green", new Vector2(268, 62), new Vector2(144, -27),
-                    () => choose(BackgroundStyle.Forest), BackgroundStyle.Forest);
-            AddItem(backgrounds, "Back", new Vector2(165, 49), new Vector2(-195, -126),
+            var styles = new[] { BackgroundStyle.Passthrough, BackgroundStyle.Dimmed,
+                BackgroundStyle.Slate, BackgroundStyle.Forest, BackgroundStyle.Library,
+                BackgroundStyle.Beach, BackgroundStyle.Meadow };
+            var names = new[] { "Passthrough", "Dim Room", "Slate Blue", "Forest Green",
+                "Historic Library", "Sunrise Beach", "Sunny Meadow" };
+            for (int i = 0; i < styles.Length; i++)
+            {
+                var choice = styles[i];
+                AddItem(backgrounds, names[i], new Vector2(268, 48),
+                    new Vector2(i % 2 == 0 ? -144 : 144, 64 - (i / 2) * 54),
+                    () => choose(choice), choice);
+            }
+            AddItem(backgrounds, "Back", new Vector2(268, 48), new Vector2(144, -98),
                     () => ShowBackgrounds(false));
+            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Nature: Poly Haven / CC0",
+                new Vector2(590, 42), new Vector2(0, -151), 13, Muted,
+                alignment: TextAnchor.MiddleCenter);
 
             cursor = CreateRect("Controller pointer", panel, new Vector2(12, 12), Vector2.zero);
             cursor.localRotation = Quaternion.Euler(0f, 0f, 45f);
@@ -80,7 +92,7 @@ namespace LockedIn
             cursor.gameObject.SetActive(false);
             ShowBackgrounds(false);
 
-            calibration = CreateRect("Border calibration", camera, new Vector2(700, 112), Vector2.zero);
+            calibration = CreateRect("Border calibration", camera, new Vector2(760, 170), Vector2.zero);
             calibration.localPosition = new Vector3(0f, -0.25f, 1.1f);
             calibration.localScale = Vector3.one * 0.0011f;
             var calibrationCanvas = calibration.gameObject.AddComponent<Canvas>();
@@ -88,10 +100,12 @@ namespace LockedIn
             calibrationCanvas.worldCamera = canvas.worldCamera;
             calibrationCanvas.sortingOrder = canvas.sortingOrder;
             AddImage(calibration, Panel);
-            calibrationTitle = AddText(calibration, "", new Vector2(650, 44), new Vector2(0, 27),
+            calibrationTitle = AddText(calibration, "", new Vector2(710, 58), new Vector2(0, 43),
                                        30, Ink, FontStyle.Bold);
-            calibrationHint = AddText(calibration, "", new Vector2(650, 52), new Vector2(0, -23), 21, Muted);
+            calibrationHint = AddText(calibration, "", new Vector2(710, 88), new Vector2(0, -29), 22, Muted);
             calibration.gameObject.SetActive(false);
+            BuildInstructions();
+            if (PlayerPrefs.GetInt("LockedIn.Walkthrough.v1", 0) == 0) StartWalkthrough();
         }
 
         public void ShowCalibration(string title, string hint)
@@ -173,6 +187,7 @@ namespace LockedIn
 
         private void ShowBackgrounds(bool show)
         {
+            if (instructions != null) instructions.gameObject.SetActive(false);
             home.gameObject.SetActive(!show);
             backgrounds.gameObject.SetActive(show);
         }

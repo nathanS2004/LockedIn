@@ -23,9 +23,18 @@ Shader "LockedIn/Focus Mask"
             float3 _SecondOrigin, _SecondRight, _SecondUp, _SecondNormal, _SecondMin, _SecondMax;
             float _Dimming, _HasWindow, _HasSecondWindow, _Preview, _Review;
 
-            float4 Background(float opacity)
+            sampler2D _Panorama;
+            float _UsePanorama;
+            float4 Background(float opacity, float3 ray)
             {
-                return float4(_BackgroundColor * opacity, opacity);
+                float3 color = _BackgroundColor;
+                if (_UsePanorama > 0.5)
+                {
+                    float2 uv = float2(0.5 + atan2(ray.x, ray.z) / (2.0 * UNITY_PI),
+                        0.5 + asin(clamp(ray.y, -1.0, 1.0)) / UNITY_PI);
+                    color = tex2D(_Panorama, uv).rgb;
+                }
+                return float4(color * opacity, opacity);
             }
 
             struct AppData
@@ -73,11 +82,10 @@ Shader "LockedIn/Focus Mask"
             float4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                if (_HasWindow < 0.5 && _Preview < 0.5)
-                    return Background(_Dimming);
-
                 float3 eye = _WorldSpaceCameraPos;
                 float3 ray = normalize(input.worldPosition - eye);
+                if (_HasWindow < 0.5 && _Preview < 0.5)
+                    return Background(_Dimming, ray);
                 if (_Preview > 0.5)
                 {
                     float3 delta = _Probe - eye;
@@ -106,7 +114,7 @@ Shader "LockedIn/Focus Mask"
                     float border = saturate(coverage - max(firstInner, secondInner));
                     return float4(float3(0.12, 1.0, 0.75) * border, max(border, 0.12 * (1.0 - coverage)));
                 }
-                return Background(_Dimming * (1.0 - coverage));
+                return Background(_Dimming * (1.0 - coverage), ray);
             }
             ENDCG
         }
