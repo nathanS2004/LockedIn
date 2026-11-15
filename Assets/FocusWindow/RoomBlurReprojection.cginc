@@ -1,0 +1,58 @@
+// RGB capture is not native compositor passthrough. Require depth and project
+// each eye's surface point into that eye's calibrated, capture-time RGB camera.
+UNITY_DECLARE_TEX2DARRAY(_RoomDepth);
+sampler2D _RoomLeft, _RoomRight;
+float4x4 _RoomDepthProjection[2], _RoomDepthInverse[2];
+float4x4 _RoomWorldToLeft, _RoomWorldToRight;
+float4 _RoomLeftIntrinsics, _RoomRightIntrinsics;
+float _RoomBlurMode, _RoomBlurReady, _RoomBlurMix;
+
+float4 RoomBlur(float3 eye, float3 ray)
+{
+    if (_RoomBlurReady < 0.5) return 0;
+    int index = 0;
+    #if defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED) || defined(UNITY_SINGLE_PASS_STEREO)
+        index = unity_StereoEyeIndex;
+    #endif
+    float3 roomPoint = eye + ray * 2;
+    // Iterative eye-to-depth reprojection. Reject holes/disocclusions instead of
+    // guessing a flat room plane or stretching camera pixels across the view.
+    [unroll] for (int stepIndex = 0; stepIndex < 4; stepIndex++)
+    {
+        float4 projected = mul(_RoomDepthProjection[index], float4(roomPoint, 1));
+        if (projected.w <= 0.00001) return 0;
+        float2 depthUv = (projected.xy / projected.w + 1) * 0.5;
+        if (any(depthUv < 0.01) || any(depthUv > 0.99)) return 0;
+        float depth = UNITY_SAMPLE_TEX2DARRAY_LOD(_RoomDepth, float3(depthUv, index), 0).r;
+        if (!(depth > 0.00001 && depth < 0.99999)) return 0;
+        float4 world = mul(_RoomDepthInverse[index], float4(depthUv * 2 - 1, depth * 2 - 1, 1));
+        if (abs(world.w) < 0.00001) return 0;
+        float3 surface = world.xyz / world.w;
+        float distance = dot(surface - eye, ray);
+        if (!(distance >= 0.15 && distance <= 15)) return 0;
+        float residual = length(surface - (eye + ray * distance));
+        if (stepIndex == 3 && residual > 0.015 + distance * 0.005) return 0;
+        roomPoint = eye + ray * distance;
+    }
+    float3 cameraPoint;
+    float4 intrinsics;
+    if (index == 0)
+    {
+        cameraPoint = mul(_RoomWorldToLeft, float4(roomPoint, 1)).xyz;
+        intrinsics = _RoomLeftIntrinsics;
+    }
+    else
+    {
+        cameraPoint = mul(_RoomWorldToRight, float4(roomPoint, 1)).xyz;
+        intrinsics = _RoomRightIntrinsics;
+    }
+    if (cameraPoint.z <= 0.01) return 0;
+    float2 uv = cameraPoint.xy / cameraPoint.z * intrinsics.xy + intrinsics.zw;
+    // Keep the Gaussian footprint in-bounds and leave the periphery native-clear.
+    float edge = min(min(uv.x, uv.y), min(1 - uv.x, 1 - uv.y));
+    float coverage = smoothstep(0.06, 0.11, edge);
+    if (coverage <= 0) return 0;
+    float3 color = index == 0 ? tex2D(_RoomLeft, uv).rgb : tex2D(_RoomRight, uv).rgb;
+    float alpha = coverage * _RoomBlurMix;
+    return float4(color * alpha, alpha);
+}
