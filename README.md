@@ -23,6 +23,8 @@ Room Blur replaces Slate Blue. Valid camera/depth areas use real-image Gaussian 
 Sundowner Overlook replaces the Passthrough background tile; Shanghai Bund replaces Forest Green. Right A bypass or knob minimum still restores the room. Both panoramas download through the existing asset-restoration script.
 See [panorama replacements and validation](docs/panorama-replacements.md) for asset credits, setup and remaining headset checks.
 
+Secluded Beach replaces Dim Room, and Deep Space replaces Sunny Meadow. Deep Space uses NASA's 16K full-sphere star map with an 8K Quest import for sharper stars; the other panoramas keep their 4K import settings. The knob controls opacity and right A restores the room.
+
 ## Development log
 
 - [Session handoff and verification record](docs/devlog/2026-11-14-potentiometer-session-handoff.md)

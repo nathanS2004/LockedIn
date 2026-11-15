@@ -378,7 +378,8 @@ namespace LockedIn
         {
             if (style != background) roomBlur?.Stop();
             string resource = style == BackgroundStyle.Library ? "library" :
-                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" :
+                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.SpaceStars ? "space_stars" :
+                style == BackgroundStyle.SecludedBeach ? "secluded_beach" :
                 style == BackgroundStyle.SundownerOverlook ? "sundowner_overlook" :
                 style == BackgroundStyle.ShanghaiBund ? "shanghai_bund" : null;
             if (style != background)

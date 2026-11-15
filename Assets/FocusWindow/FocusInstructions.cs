@@ -39,7 +39,7 @@ namespace LockedIn
             string[] bodies = {
                 "Use the RIGHT controller.\nPoint at a button and squeeze the index-finger trigger to select.\nSqueeze the side grip to open or close Home. Help is always available there.",
                 "Start with Detect Workspace (AI). Look at the whole screen and keyboard, then scan.\nReview the cyan borders. Press right A to accept, or trigger to retry. Right B starts manual placement.",
-                "After selecting a workspace, open Home > Choose Background.\nTry Sundowner Overlook, Shanghai Bund, or another environment. Your screen and keyboard stay clear. Photos surround you but are not walkable spaces.\nKnob minimum or right A restores the room.",
+                "After selecting a workspace, open Home > Choose Background.\nTry Secluded Beach, Deep Space, Sundowner Overlook, or Shanghai Bund. Your screen and keyboard stay clear. These panoramas are not walkable spaces.\nKnob minimum or right A restores the room.",
                 "Turn the physical knob to adjust your surroundings.\nRoom Blur: more turn adds blur to real camera images outside your workspace. Other backgrounds: more turn adds opacity.\nMinimum or NO SIGNAL restores the room. Keep the Nano powered by USB; it sends directly over Wi-Fi.",
                 "While focusing, right A hides/shows the effect. Right B starts a NEW manual border.\nBorders stay in the room: scan again if you move your laptop.\nRoom Blur needs camera + scene access. A soft camera-derived fill covers unseen surroundings; your workspace stays clear."
             };

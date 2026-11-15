@@ -13,8 +13,9 @@ namespace LockedIn
         ShanghaiBund,
         Library,
         Beach,
-        Meadow,
-        SundownerOverlook
+        SpaceStars,
+        SundownerOverlook,
+        SecludedBeach
     }
 
     internal sealed partial class FocusHomeMenu : IDisposable
@@ -71,11 +72,11 @@ namespace LockedIn
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);
-            var styles = new[] { BackgroundStyle.SundownerOverlook, BackgroundStyle.Dimmed,
+            var styles = new[] { BackgroundStyle.SundownerOverlook, BackgroundStyle.SecludedBeach,
                 BackgroundStyle.RoomBlur, BackgroundStyle.ShanghaiBund, BackgroundStyle.Library,
-                BackgroundStyle.Beach, BackgroundStyle.Meadow };
-            var names = new[] { "Sundowner Overlook", "Dim Room", "Room Blur", "Shanghai Bund",
-                "Historic Library", "Sunrise Beach", "Sunny Meadow" };
+                BackgroundStyle.Beach, BackgroundStyle.SpaceStars };
+            var names = new[] { "Sundowner Overlook", "Secluded Beach", "Room Blur", "Shanghai Bund",
+                "Historic Library", "Sunrise Beach", "Deep Space" };
             for (int i = 0; i < styles.Length; i++)
             {
                 var choice = styles[i];
@@ -85,7 +86,7 @@ namespace LockedIn
             }
             AddItem(backgrounds, "Back", new Vector2(268, 48), new Vector2(144, -98),
                     () => ShowBackgrounds(false));
-            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Other photos: Poly Haven / CC0",
+            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 | Beaches/city: Poly Haven / CC0\nDeep Space: NASA/Goddard Scientific Visualization Studio",
                 new Vector2(590, 42), new Vector2(0, -151), 13, Muted,
                 alignment: TextAnchor.MiddleCenter);
 
