@@ -98,6 +98,25 @@ namespace LockedIn
             return true;
         }
 
+        // The controller ray and camera rays originate at different points. Compare
+        // the controller's plane intersection with the fitted screen in world space.
+        internal static bool TryMeasureScreenAim(Ray aim, ScreenDepthSelection.ScreenVolume screen,
+                                                 out float distance, out float miss)
+        {
+            miss = float.PositiveInfinity;
+            var plane = new Plane(screen.Normal, screen.Origin);
+            if (!plane.Raycast(aim, out distance) || distance > 3f)
+                return false;
+
+            Vector3 offset = aim.GetPoint(distance) - screen.Origin;
+            float x = Vector3.Dot(offset, screen.Right);
+            float y = Vector3.Dot(offset, screen.Up);
+            float outsideX = x - Mathf.Clamp(x, screen.Min.x, screen.Max.x);
+            float outsideY = y - Mathf.Clamp(y, screen.Min.y, screen.Max.y);
+            miss = new Vector2(outsideX, outsideY).magnitude;
+            return true;
+        }
+
         public static Vector3 Center(ScreenDepthSelection.ScreenVolume volume) =>
             volume.Origin + volume.Right * (volume.Min.x + volume.Max.x) * 0.5f +
             volume.Up * (volume.Min.y + volume.Max.y) * 0.5f +

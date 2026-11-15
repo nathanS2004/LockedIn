@@ -37,6 +37,24 @@ internal static class WorkspaceGeometryChecks
         Check(Mathf.Abs(Vector3.Dot(screen.Right, screen.Up)) < 0.001f, "Screen axes orthogonal.");
         Check(Mathf.Abs(WorkspaceGeometry.Center(screen).z - 1) < 0.01f, "Screen retains physical depth.");
 
+        Vector3 screenCenter = WorkspaceGeometry.Center(screen);
+        Vector3 controller = new Vector3(0.5f, 0.35f, 0.65f);
+        var offsetAim = new Ray(controller, (screenCenter - controller).normalized);
+        Check(WorkspaceGeometry.TryMeasureScreenAim(offsetAim, screen, out float hitDistance, out float hitMiss) &&
+            hitDistance > 0 && hitMiss < 0.001f, "An off-axis controller can hit the screen without matching the camera direction.");
+        var nextScreen = new ScreenDepthSelection.ScreenVolume(screen.Origin + Vector3.right,
+            screen.Right, screen.Up, screen.Normal, screen.Min, screen.Max);
+        Check(WorkspaceGeometry.TryMeasureScreenAim(offsetAim, nextScreen, out _, out float otherMiss) &&
+            otherMiss > 0.06f, "The ray aimed at one screen does not select its neighbor.");
+        Vector3 nearEdge = screen.Origin + screen.Right * (screen.Max.x + 0.04f) +
+            screen.Up * (screen.Min.y + screen.Max.y) * 0.5f;
+        Check(WorkspaceGeometry.TryMeasureScreenAim(new Ray(controller, (nearEdge - controller).normalized),
+            screen, out _, out float edgeMiss) && Mathf.Abs(edgeMiss - 0.04f) < 0.001f, "Measure edge misses in meters.");
+        Check(!WorkspaceGeometry.TryMeasureScreenAim(new Ray(controller, -offsetAim.direction), screen, out _, out _),
+            "A controller pointing away cannot select a screen behind it.");
+        Check(!WorkspaceGeometry.TryMeasureScreenAim(new Ray(controller, screen.Right), screen, out _, out _),
+            "A ray parallel to the display does not select it.");
+
         Rect keyboardRect = new Rect(0.3f, 0.7f, 0.4f, 0.2f);
         var keyboardPoints = SamplePlane(keyboardRect, imageRay, new Plane(Vector3.up, new Vector3(0, 0.65f, 0)));
         Check(WorkspaceGeometry.TryFitPoints(keyboardRect, true, imageRay, keyboardPoints, out var board), "Fit horizontal keyboard.");

@@ -57,7 +57,7 @@ namespace LockedIn
         }
 
         private void ShowWorkspaceAim() => menu.ShowCalibration("Look at your screen and keyboard",
-            "Aim at your screen, then trigger to scan. Keep both in view. B for manual.");
+            "Keep both in view. Point from your seat and press the trigger. B for manual.");
 
         private void UpdateWorkspaceDetection(bool hasRay, Ray aim, bool pressed)
         {
