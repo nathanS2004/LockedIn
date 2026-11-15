@@ -30,7 +30,6 @@ namespace LockedIn
         private EnvironmentDepthManager depth;
         private GameObject captureRoot;
         private Material filter;
-        private RenderTexture ambientScratch, ambientFill;
         private bool ownsDepth, requestedPermission, subscribed;
         private float strength, startedAt;
         private bool active;
@@ -171,7 +170,7 @@ namespace LockedIn
             mask.SetMatrixArray("_RoomDepthInverse", depthInverse);
             mask.SetFloat("_RoomBlurMix", Mathf.SmoothStep(0, 1, strength / 0.08f));
             mask.SetFloat("_RoomBlurReady", 1);
-            Status = "Experimental - soft surrounding fill";
+            Status = "Experimental - limited camera coverage";
         }
 
         private bool PrepareEye(int eye)
@@ -201,22 +200,6 @@ namespace LockedIn
                 Graphics.Blit(scratch[eye], blurred[eye], filter);
                 blurredAt[eye] = timestamps[eye];
                 blurredStrength[eye] = strength;
-                if (eye == 0)
-                {
-                    // A shared, very low-detail color field fills regions the RGB
-                    // cameras cannot see. This is ambient approximation, not geometry.
-                    if (ambientScratch == null)
-                    {
-                        ambientScratch = NewTexture(16, 12);
-                        ambientFill = NewTexture(16, 12);
-                    }
-                    float spread = Mathf.Lerp(0.03f, 0.12f, strength);
-                    filter.SetVector("_BlurStep", new Vector4(spread, 0, 0, 0));
-                    Graphics.Blit(blurred[0], ambientScratch, filter);
-                    filter.SetVector("_BlurStep", new Vector4(0, spread, 0, 0));
-                    Graphics.Blit(ambientScratch, ambientFill, filter);
-                    mask.SetTexture("_RoomAmbient", ambientFill);
-                }
             }
             Matrix4x4 worldPose = head.parent.localToWorldMatrix * Matrix4x4.TRS(pose.position, pose.rotation, Vector3.one);
             var intrinsics = camera.Intrinsics;
@@ -250,7 +233,6 @@ namespace LockedIn
             subscribed = false;
             active = false;
             previousDepthTexture = null;
-            Release(ref ambientScratch); Release(ref ambientFill);
             // Disable synchronously so AI can open its left camera on the next frame.
             for (int eye = 0; eye < 2; eye++)
             {

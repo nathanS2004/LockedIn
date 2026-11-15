@@ -109,3 +109,9 @@ both-eye alignment or performance checks passed.
 
 No merge has been requested or performed. The PR should describe the current
 soft-fill implementation and retain these unverified-device limits.
+
+## PR split
+
+This initial PR deliberately excludes surrounding soft-fill code. It preserves the
+user-tested partial camera blur, Nano integration and tutorial. The accepted
+full-surrounding-fill request is implemented and reviewed in the next stacked PR.

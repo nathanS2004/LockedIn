@@ -23,10 +23,9 @@ The existing stereo-aware shader and its world-space clear volumes are retained.
 
 **Room Blur** replaces Slate Blue. In this experimental mode the knob controls
 a true Gaussian filter on real left/right camera images instead of environment
-opacity. Valid camera/depth pixels use projected RGB blur; peripheral/rejected
-pixels use soft camera-derived fill so the effect covers the surroundings outside
-the workspace. This fill approximates unseen room colors, rather than filtering
-the compositor's unavailable full-field image. See [implementation and device checklist](room-blur.md).
+opacity. Valid RGB/depth regions use projected camera blur; uncovered or rejected
+pixels stay native-clear. This initial PR does not include surrounding soft fill;
+that improvement is intentionally separate. See [implementation and device checklist](room-blur.md).
 
 Select/confirm a workspace, choose Room Blur, close Home with right grip, and turn
 the knob. Allow camera + scene access if prompted. Zero, bypass, signal loss,

@@ -6,13 +6,11 @@ changes Gaussian blur radius; other photo/color backgrounds keep their existing
 opacity control. Workspace detection, confirmation and clear-volume geometry stay
 unchanged. The tutorial now has five pages, with a dedicated physical-knob page.
 
-This is an **experimental camera blur with full surrounding soft fill**. It does not provide the
-headset compositor's fully corrected, full-field passthrough pixels to Unity.
-Valid camera/depth pixels use reprojected RGB blur, blending into a heavily
-softened camera-derived color field in the periphery and at rejected projection
-pixels. The user confirmed the first version blurred only a square, then chose
-this surrounding-fill approach. The fill approximates unseen surroundings;
-it is not true filtering of unseen compositor pixels. The workspace stays clear.
+This PR contains the **initial partial-coverage room blur**. It does not expose
+or filter the full-field native compositor image. Supported RGB/depth areas are
+blurred; uncovered or rejected pixels remain native-clear. The user confirmed
+visible blur but observed its square camera boundary. Full surrounding soft fill
+is intentionally reserved for a separate follow-up PR.
 
 ## Rendering and dependencies
 
@@ -32,7 +30,7 @@ must be evaluated in the headset.
 
 Each eye's RGB image is downsampled to approximately 320x240 and filtered by
 horizontal/vertical nine-tap Gaussian passes. Four small persistent buffers are
-reused (about 1.2 MB at 4:3), plus two 16x12 fill buffers; native stereo capture/depth have additional SDK memory
+reused (about 1.2 MB at 4:3); native stereo capture/depth have additional SDK memory
 cost. Blur reruns for new camera frames or changing strength, rather than
 unconditionally repeating it at display rate. No per-frame string property-name
 construction or camera image allocations are needed.
@@ -41,11 +39,9 @@ Before rendering, after EnvironmentDepthManager publishes its matrices, the
 shader intersects each eye's view ray with environment depth by iterative
 projection/unprojection. It maps the resulting world point into the corresponding
 capture-time RGB camera. Invalid projection/depth, near/far range rejection,
-large reprojection residuals and insufficient source coverage select the shared
-ambient fill. Both eyes use the same very low-detail spherical color field;
-camera edges fade broadly into it to remove the rectangular alpha cutoff.
-Missing/stale complete camera/depth input, tracking loss, bypass and disconnect
-still clear the effect. The original screen and
+large reprojection residuals and insufficient source coverage return transparent
+pixels. Camera edges fade into native passthrough. Missing/stale camera/depth,
+tracking loss, bypass and disconnect also clear the effect. The screen and
 keyboard masks are applied to the result, preserving their clear interiors.
 
 Graphics.Blit render target and sRGB state are restored after the GPU passes.
@@ -57,8 +53,7 @@ capture. Unsupported XR modes fail clear.
 Native GPU reprojection, occlusion boundaries, lens calibration, source orientation,
 dynamic objects, image timing and frame time require on-device evaluation. The
 implemented geometry and fallback rules do not establish perceptual alignment or
-comfort by themselves. Unsupported pixels use approximate fill rather than
-claiming correct camera reconstruction everywhere.
+comfort by themselves. Unsupported pixels remain clear; correct reconstruction everywhere is not claimed.
 
 Official references: [Meta camera overview](https://developers.meta.com/vr/documentation/unity/unity-pca-overview/),
 [camera integration](https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/),
@@ -82,8 +77,7 @@ calculation and EnvironmentDepthManager's published world/depth matrices.
    mode as validated.
 5. Confirm screen and keyboard stay unfiltered, including their boundary. Look
    away from the workspace and verify there is no stretched flat room image.
-   Periphery should have soft fill instead of a clear rectangular boundary;
-   its colors approximate the peripheral room.
+   Periphery remains clear by design in this first PR.
 6. Open Home and rescan with AI after using blur; verify the left camera is released.
    Change to a photo/color and confirm the knob still controls its opacity.
 7. At high blur, test A bypass, unplug Nano power, interrupt Wi-Fi, pause/resume,
@@ -111,5 +105,5 @@ the shader build, but not its GPU appearance, stereo alignment or frame time.
 The physical-headset checklist above remains required.
 
 The user subsequently confirmed visible camera blur but reported its square
-coverage boundary. The surrounding-fill follow-up passes desktop shader checks
-and C# compilation; its updated APK/device appearance is not yet verified.
+coverage boundary. The requested surrounding-fill improvement is being split into the next PR;
+it is not included in this initial implementation.

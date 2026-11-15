@@ -1,4 +1,4 @@
-# Add direct Nano control, surrounding room blur, and Quest handoff docs
+# Add direct Nano control, initial room blur, and Quest handoff docs
 
 LockedIn now keeps the complete workspace-selection app while a physical Nano
 33 IoT knob controls its surroundings. The Nano sends directly over Wi-Fi to the
@@ -10,7 +10,7 @@ standalone Quest APK; a laptop may supply USB power but is not a data relay.
   selection and photo backgrounds. Accepted workspace regions stay clear.
 - Map knob values to photo/color opacity. Replace Slate Blue with Room Blur:
   Gaussian-filter actual left/right camera images, depth-reproject valid regions,
-  and blend into soft camera-derived fill around the rest of the workspace.
+  and leave unsupported camera/depth regions clear. Surrounding soft fill is a separate follow-up PR.
 - Add a background UDP receiver, calibrated/smoothed firmware, reconnect/status
   handling and immediate clear on zero, bypass or loss of signal. Keep existing
   controller bindings. Retain the older Python bridge as an optional diagnostic.
@@ -41,16 +41,14 @@ same-network requirements and USB-only power. No credentials are included.
 - Six D3D shader vertex/fragment checks passed, including instanced stereo.
 - Android Room Blur APK built successfully in 204 seconds, installed and launched
   on Quest. User confirmed blur, then requested a fix for its square coverage.
-- The final surrounding-fill follow-up passes shader checks and C# compilation.
-  Its latest executable rerun passed geometry/opacity checks, then Windows
-  Application Control blocked the protocol executable; no full rerun pass claimed.
+- This first PR contains the user-tested partial-coverage blur. The requested
+  surrounding-fill change is intentionally excluded and will have its own PR.
 
 ## Remaining device checks / limitations
 
 Room Blur is experimental. RGB camera coverage is smaller than native passthrough;
-the peripheral fill **approximates unseen surroundings**, rather than filtering
-unavailable compositor pixels. Stereo timestamps use a tolerance, not guaranteed
-hardware synchronization. Final soft-fill APK appearance, stereo alignment,
+uncovered peripheral pixels remain native-clear in this initial implementation. Stereo timestamps use a tolerance, not guaranteed
+hardware synchronization. Stereo alignment,
 moving-object/edge behavior, frame time, disconnect cases and AI-camera handoff
 still need the device checklist. The updated tutorial and docs expose these limits.
 
