@@ -82,7 +82,8 @@ namespace LockedIn
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
             screenSelection = new ScreenDepthSelection(raycasts);
-            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect, BeginWorkspaceDetection);
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect,
+                () => BeginWorkspaceDetection(), () => BeginWorkspaceDetection(debug: true));
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }

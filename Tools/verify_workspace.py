@@ -55,7 +55,7 @@ editor_refs += [unity / "Data" / "PlaybackEngines" / "AndroidPlayer" / "UnityEdi
 compile_to("LockedIn.Editor.Check", list((root / "Assets" / "FocusWindow" / "Editor").glob("*.cs")),
            editor_refs, "UNITY_EDITOR;UNITY_ANDROID;UNITY_6000_6_OR_NEWER;UNITY_6000_5_OR_NEWER")
 geometry_sources = [root / "Assets" / "FocusWindow" / name for name in
-                    ["WorkspaceGeometry.cs", "WorkspaceDetection.cs", "ScreenDepthSelection.cs"]]
+                    ["WorkspaceGeometry.cs", "WorkspaceDetection.cs", "WorkspaceScanDebug.cs", "ScreenDepthSelection.cs"]]
 geometry_sources.append(root / "Tests" / "WorkspaceGeometryChecks.cs")
 test = compile_to("WorkspaceGeometryChecks", geometry_sources, runtime_refs, "UNITY_ANDROID", True)
 for ref in runtime_refs:
