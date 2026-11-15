@@ -23,9 +23,10 @@ The existing stereo-aware shader and its world-space clear volumes are retained.
 
 **Room Blur** replaces Slate Blue. In this experimental mode the knob controls
 a true Gaussian filter on real left/right camera images instead of environment
-opacity. Valid RGB/depth regions use projected camera blur; uncovered or rejected
-pixels stay native-clear. This initial PR does not include surrounding soft fill;
-that improvement is intentionally separate. See [implementation and device checklist](room-blur.md).
+opacity. Valid camera/depth pixels use projected RGB blur; peripheral/rejected
+pixels use soft camera-derived fill so the effect covers the surroundings outside
+the workspace. This fill approximates unseen room colors, rather than filtering
+the compositor's unavailable full-field image. See [implementation and device checklist](room-blur.md).
 
 Select/confirm a workspace, choose Room Blur, close Home with right grip, and turn
 the knob. Allow camera + scene access if prompted. Zero, bypass, signal loss,
@@ -57,7 +58,7 @@ Binary assets and patched Meta SDKs have been restored locally. On a fresh check
 python Tools/restore_full_app.py
 ```
 
-This restores the three existing licensed background JPEGs, verifies Meta Core
+This restores the five licensed background JPEGs, verifies Meta Core
 and MRUK 85 archives against registry hashes, applies the complete app's existing
 Unity 6.6 compatibility repairs, and validates the pinned YOLO model size/blob hash.
 Downloads/embedded SDKs are ignored by Git; the scripts and license notices are

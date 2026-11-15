@@ -18,7 +18,10 @@ Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home s
 
 The knob controls photo/color opacity or Room Blur strength while keeping the existing detection and Home UI. The Nano 33 IoT sends directly over Wi-Fi to Quest `192.168.1.171:4210`; no laptop bridge is needed at runtime. Laptop USB can power the Nano while Quest runs unplugged. See [direct Nano setup](Arduino/LockedInKnobWiFi/README.md), [app setup/testing](docs/potentiometer-control.md), and [experimental room blur](docs/room-blur.md).
 
-Room Blur replaces Slate Blue. Valid camera/depth areas use real-image Gaussian blur; uncovered surroundings remain clear while the detected workspace stays clear. Full surrounding soft fill will be a separate follow-up PR. The five-page tutorial includes the potentiometer.
+Room Blur replaces Slate Blue. Valid camera/depth areas use real-image Gaussian blur; a soft camera-derived fill covers the remaining surroundings while the detected workspace stays clear. Peripheral fill is approximate. The five-page tutorial includes the potentiometer.
+
+Sundowner Overlook replaces the Passthrough background tile; Shanghai Bund replaces Forest Green. Right A bypass or knob minimum still restores the room. Both panoramas download through the existing asset-restoration script.
+See [panorama replacements and validation](docs/panorama-replacements.md) for asset credits, setup and remaining headset checks.
 
 ## Development log
 

@@ -16,10 +16,11 @@ Each mode has a preflight explanation with a Start button and Back to Home:
   bottom-left. Cyan dot is 6 cm along the pointer ray, not a distant raycast.
   Trigger records points. Then record front keyboard edge or A for screen only.
 - Backgrounds: select a workspace first; otherwise opacity is capped at 45%.
-  Passthrough shows the room. Photo panoramas are not walkable environments.
+  Sundowner Overlook replaces the Passthrough menu tile and Shanghai Bund replaces
+  Forest Green. Right A or knob minimum shows the room. Photo panoramas are not walkable environments.
   Room Blur replaces Slate Blue, requires an accepted workspace, and filters real
-  camera images where stereo camera/depth reprojection is valid. Uncovered
-  surroundings remain clear; the screen stays clear. The knob controls
+  camera images where stereo camera/depth reprojection is valid. Soft ambient
+  fill covers unseen surroundings; the screen stays clear. The knob controls
   blur radius in this experimental mode.
 
 Outside menus/selection, A toggles background, B starts a new manual border,
