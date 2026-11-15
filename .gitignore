@@ -6,6 +6,7 @@
 /[Uu]ser[Ss]ettings/
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
+/.utmp/
 
 # Local builds, IDE output, and signing material
 /[Bb]uild/
@@ -23,3 +24,17 @@
 *.jks
 .env
 .env.*
+
+# Python bridge local environment
+__pycache__/
+*.pyc
+/.venv/
+/Arduino/**/arduino_secrets.h
+
+# Restored full-app downloads (reproducible with Tools/restore_full_app.py)
+/Packages/com.meta.xr.sdk.core/
+/Packages/com.meta.xr.mrutilitykit/
+/Assets/Resources/LockedIn/yolov9sentis.sentis
+/Assets/Resources/LockedIn/yolov9sentis.sentis.meta
+/Assets/Resources/LockedIn/Backgrounds/*.jpg
+/Assets/Resources/LockedIn/Backgrounds/*.jpg.meta
