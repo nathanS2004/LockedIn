@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.ARFoundation;
 
 namespace LockedIn
 {
@@ -7,6 +8,14 @@ namespace LockedIn
     public sealed class FocusWindow : MonoBehaviour
     {
         [SerializeField] private Shader maskShader;
+        [SerializeField] private ARRaycastManager raycasts;
+
+        private const string ScenePermission = "com.oculus.permission.USE_SCENE";
+        private ScreenDepthSelection screenSelection;
+        private Coroutine screenScan;
+        private bool selectingScreen;
+        private float nextPreviewSample;
+        private float previewDistance = 0.65f;
 
         private const string RightHand = "<XRController>{RightHand}/";
         private const float ProbeOffset = 0.06f;
@@ -71,7 +80,8 @@ namespace LockedIn
             overlay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
-            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder);
+            screenSelection = new ScreenDepthSelection(raycasts);
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -98,6 +108,9 @@ namespace LockedIn
             reset.Disable();
             adjust.Disable();
             openMenu.Disable();
+            CancelAutoSelection();
+            if (raycasts != null)
+                raycasts.enabled = false;
             menu?.Hide();
             menu?.SetCalibrationVisible(false);
             if (overlay != null)
@@ -127,6 +140,8 @@ namespace LockedIn
         {
             if (openMenu.WasPressedThisFrame())
             {
+                if (selectingScreen)
+                    CancelAutoSelection();
                 menu.Toggle(background);
                 menu.SetCalibrationVisible(placingBorder);
                 RenderMask(false, default);
@@ -144,6 +159,12 @@ namespace LockedIn
 
             if (reset.WasPressedThisFrame())
                 BeginBorder();
+
+            if (selectingScreen)
+            {
+                UpdateAutoSelect(hasRay, pointerRay, pressed);
+                return;
+            }
 
             if (placingBorder)
             {
@@ -170,12 +191,107 @@ namespace LockedIn
 
         private void BeginBorder()
         {
+            CancelAutoSelection();
             menu.Hide();
             calibrationStep = 0;
             windowPlaced = false;
             dimEnabled = false;
             placingBorder = true;
             menu.ShowCalibration("1 / 3   Top-left of the screen", "Line up the cyan dot with the corner and pull the trigger.");
+        }
+
+        private void BeginAutoSelect()
+        {
+            menu.Hide();
+            placingBorder = false;
+            selectingScreen = true;
+            nextPreviewSample = 0f;
+            previewDistance = 0.65f;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(ScenePermission))
+            {
+                menu.ShowCalibration("Allow scene access", "Screen selection needs depth access. Press B for manual placement.");
+                UnityEngine.Android.Permission.RequestUserPermission(ScenePermission);
+                return;
+            }
+#endif
+            ShowAimPrompt();
+        }
+
+        private void ShowAimPrompt()
+        {
+            menu.ShowCalibration("Auto Select Screen", "Aim at the center of the screen and pull the trigger once. B for manual.");
+        }
+
+        private void UpdateAutoSelect(bool hasRay, Ray ray, bool pressed)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(ScenePermission))
+            {
+                RenderMask(false, default, true);
+                return;
+            }
+#endif
+            if (raycasts == null)
+            {
+                menu.ShowCalibration("Depth unavailable", "Press B to place a border manually.");
+                RenderMask(false, default, true);
+                return;
+            }
+
+            if (!raycasts.enabled)
+            {
+                raycasts.enabled = true;
+                ShowAimPrompt();
+            }
+
+            if (screenScan == null && hasRay && Time.unscaledTime >= nextPreviewSample)
+            {
+                nextPreviewSample = Time.unscaledTime + 0.10f;
+                if (screenSelection.TryDepthPoint(ray, out Vector3 surface))
+                    previewDistance = Mathf.Clamp(Vector3.Distance(ray.origin, surface), 0.15f, 2f);
+            }
+
+            if (screenScan == null && hasRay && pressed)
+            {
+                menu.ShowCalibration("Checking screen edges", "Hold still for a moment.");
+                screenScan = StartCoroutine(screenSelection.FindScreen(ray, transform.position, transform.right,
+                                                                       ApplyAutoSelection));
+            }
+
+            RenderMask(hasRay && screenScan == null, ray.GetPoint(previewDistance), true);
+        }
+
+        private void ApplyAutoSelection(ScreenDepthSelection.ScreenVolume? result)
+        {
+            screenScan = null;
+            if (!result.HasValue)
+            {
+                menu.ShowCalibration("Screen edges unclear", "Aim at the screen center and try again, or press B for manual.");
+                return;
+            }
+
+            ScreenDepthSelection.ScreenVolume volume = result.Value;
+            screenOrigin = volume.Origin;
+            screenRight = volume.Right;
+            screenUp = volume.Up;
+            screenNormal = volume.Normal;
+            windowMin = volume.Min;
+            windowMax = volume.Max;
+            selectingScreen = false;
+            FinishBorder();
+        }
+
+        private void CancelAutoSelection()
+        {
+            if (!selectingScreen)
+                return;
+
+            if (screenScan != null)
+                StopCoroutine(screenScan);
+            screenScan = null;
+            selectingScreen = false;
+            menu?.HideCalibration();
         }
 
         private void RecordCalibrationPoint(Vector3 point)
@@ -243,9 +359,10 @@ namespace LockedIn
             dimEnabled = style != BackgroundStyle.Passthrough;
         }
 
-        private void RenderMask(bool showPreview, Vector3 probe)
+        private void RenderMask(bool showPreview, Vector3 probe, bool suppressBackground = false)
         {
-            overlay.enabled = dimEnabled || showPreview;
+            bool showBackground = dimEnabled && !suppressBackground;
+            overlay.enabled = showBackground || showPreview;
             if (!overlay.enabled)
                 return;
 
@@ -270,7 +387,7 @@ namespace LockedIn
             mask.SetVector("_WindowMin", windowMin);
             mask.SetVector("_WindowMax", windowMax);
             mask.SetColor("_BackgroundColor", color);
-            mask.SetFloat("_Dimming", dimEnabled ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
+            mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
             mask.SetFloat("_HasWindow", windowPlaced ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetVector("_Probe", probe);

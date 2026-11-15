@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 970984590}
   - component: {fileID: 970984589}
   - component: {fileID: 970984588}
+  - component: {fileID: 190000024}
   m_Layer: 0
   m_Name: XR Origin (VR)
   m_TagString: Untagged
@@ -496,6 +497,19 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::LockedIn.FocusWindow
   maskShader: {fileID: 4800000, guid: 5e00a3ffa036423587066fe7326f88f1, type: 3}
+  raycasts: {fileID: 190000024}
+--- !u!114 &190000024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 970984587}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARRaycastManager
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
