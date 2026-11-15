@@ -32,7 +32,7 @@ namespace LockedIn
             this.depth = depth;
         }
 
-        public IEnumerator Detect(Ray aim, Action<string> status, Action<WorkspaceDetection> complete)
+        public IEnumerator Detect(Ray aim, Action<string> status, Action<WorkspaceDetection> complete, WorkspaceScanDebug debug)
         {
 #if !UNITY_ANDROID || UNITY_EDITOR
             complete(new WorkspaceDetection { Message = "Test AI on the Quest headset" });
@@ -76,7 +76,9 @@ namespace LockedIn
             capturePose = new Pose(space.TransformPoint(trackingPose.position), space.rotation * trackingPose.rotation);
             if (Quaternion.Dot(capturePose.rotation, capturePose.rotation) < 0.5f)
                 throw new InvalidOperationException("Passthrough camera pose is unavailable.");
-            TextureConverter.ToTensor(cameraAccess.GetTexture(), input,
+            Texture cameraFrame = cameraAccess.GetTexture();
+            debug?.Capture(cameraFrame, width, height);
+            TextureConverter.ToTensor(cameraFrame, input,
                 new TextureTransform().SetDimensions(width, height, 3));
             IEnumerator schedule = worker.ScheduleIterable(input);
             int scheduled = 0;
@@ -108,12 +110,16 @@ namespace LockedIn
             {
                 int id = classData[i];
                 float score = scoreData[i];
-                if (!WorkspaceBoxFilter.IsRelevant(id) || score < 0.35f) continue;
+                if (!WorkspaceBoxFilter.IsRelevant(id) || (score < 0.35f && debug == null)) continue;
                 Rect rect = Rect.MinMaxRect(Mathf.Clamp01(boxData[i, 0] / width), Mathf.Clamp01(boxData[i, 1] / height),
                     Mathf.Clamp01(boxData[i, 2] / width), Mathf.Clamp01(boxData[i, 3] / height));
-                candidates.Add(new WorkspaceBox(id, score, rect));
+                var box = new WorkspaceBox(id, score, rect);
+                debug?.Boxes.Add(box);
+                if (score >= 0.35f) candidates.Add(box);
             }
             List<WorkspaceBox> detections = WorkspaceBoxFilter.Suppress(candidates);
+            debug?.SetModelResults(detections);
+            debug?.Record($"motion after inference: {Vector3.Distance(head.position, captureHeadPosition):F3} m / {Quaternion.Angle(head.rotation, captureHeadRotation):F1} deg");
             // Depth is sampled after inference. Refuse a stale image if the user moved significantly.
             if (Vector3.Distance(head.position, captureHeadPosition) > 0.08f ||
                 Quaternion.Angle(head.rotation, captureHeadRotation) > 10f)
@@ -122,14 +128,15 @@ namespace LockedIn
                 yield break;
             }
             status("Fitting the detected workspace");
-            yield return FitDetections(detections, aim, complete);
+            yield return FitDetections(detections, aim, complete, debug);
 #endif
         }
 
         private Ray ImageRay(Vector2 topLeftUv) =>
             cameraAccess.ViewportPointToRay(new Vector2(topLeftUv.x, 1f - topLeftUv.y), capturePose);
 
-        private IEnumerator FitDetections(List<WorkspaceBox> detections, Ray aim, Action<WorkspaceDetection> complete)
+        private IEnumerator FitDetections(List<WorkspaceBox> detections, Ray aim,
+            Action<WorkspaceDetection> complete, WorkspaceScanDebug debug)
         {
             WorkspaceBox? primary = null;
             float best = float.PositiveInfinity;
@@ -138,7 +145,9 @@ namespace LockedIn
                 if (box.ClassId == 66) continue;
                 Ray ray = ImageRay(box.Rect.center);
                 // Prefer the screen closest to the user's controller aim, then confidence.
-                float score = Vector3.Angle(aim.direction, ray.direction) - box.Score * 5f;
+                float angle = Vector3.Angle(aim.direction, ray.direction);
+                float score = angle - box.Score * 5f;
+                debug?.Record($"screen candidate #{debug.BoxNumber(box)}: aim angle {angle:F1} deg, adjusted {score:F1}");
                 if (score >= best) continue;
                 best = score;
                 primary = box;
@@ -149,6 +158,7 @@ namespace LockedIn
                 yield break;
             }
             WorkspaceBox screen = primary.Value;
+            debug?.Record($"selected screen candidate #{debug.BoxNumber(screen)}");
             bool laptop = screen.ClassId == 63;
             Rect screenRect = screen.Rect;
             if (laptop) screenRect.height *= 0.62f;
@@ -156,7 +166,8 @@ namespace LockedIn
             // Reuse the user-tested edge scan to refine the image box to the actual display surface.
             yield return depth.FindScreen(ImageRay(screenRect.center), capturePose.position,
                 capturePose.rotation * Vector3.right, volume => fittedScreen = volume);
-            if (!fittedScreen.HasValue && WorkspaceGeometry.TryFit(screenRect, false, ImageRay, depth, out var fallback))
+            debug?.Record($"screen depth edge scan passed={fittedScreen.HasValue}");
+            if (!fittedScreen.HasValue && WorkspaceGeometry.TryFit(screenRect, false, ImageRay, depth, out var fallback, debug))
                 fittedScreen = fallback;
             if (!fittedScreen.HasValue)
             {
@@ -169,6 +180,7 @@ namespace LockedIn
                 complete(new WorkspaceDetection { Message = "Head moved while fitting. Try again." });
                 yield break;
             }
+            debug?.Record($"screen depth fit passed={fittedScreen.HasValue}");
             var result = new WorkspaceDetection();
             result.Volumes.Add(fittedScreen.Value);
             Vector3 screenCenter = WorkspaceGeometry.Center(fittedScreen.Value);
@@ -176,11 +188,22 @@ namespace LockedIn
             float closest = 1f;
             foreach (WorkspaceBox box in detections)
             {
-                if (box.ClassId != 66 || box.Rect.center.y < screen.Rect.center.y - 0.1f) continue;
-                if (!WorkspaceGeometry.TryFit(box.Rect, true, ImageRay, depth, out var volume)) continue;
+                if (box.ClassId != 66) continue;
+                if (box.Rect.center.y < screen.Rect.center.y - 0.1f)
+                {
+                    debug?.Record($"keyboard candidate #{debug.BoxNumber(box)} rejected: above screen in image");
+                    continue;
+                }
+                debug?.Record($"fitting keyboard candidate #{debug.BoxNumber(box)}");
+                if (!WorkspaceGeometry.TryFit(box.Rect, true, ImageRay, depth, out var volume, debug)) continue;
                 Vector3 center = WorkspaceGeometry.Center(volume);
                 float distance = Vector3.Distance(center, screenCenter);
-                if (distance >= closest || center.y > screenCenter.y + 0.08f) continue;
+                if (distance >= closest || center.y > screenCenter.y + 0.08f)
+                {
+                    debug?.Record($"keyboard candidate rejected: distance {distance:F3} m, height offset {center.y - screenCenter.y:F3} m");
+                    continue;
+                }
+                debug?.Record($"keyboard candidate #{debug.BoxNumber(box)} passed pairing checks");
                 keyboard = volume;
                 closest = distance;
                 yield return null;
@@ -190,7 +213,8 @@ namespace LockedIn
                 // A laptop class often contains its base. This is an explicitly labelled geometric estimate.
                 Rect baseRect = Rect.MinMaxRect(screen.Rect.xMin, screen.Rect.yMin + screen.Rect.height * 0.65f,
                     screen.Rect.xMax, screen.Rect.yMax);
-                if (WorkspaceGeometry.TryFit(baseRect, true, ImageRay, depth, out var volume) &&
+                debug?.Write("trying estimated laptop base");
+                if (WorkspaceGeometry.TryFit(baseRect, true, ImageRay, depth, out var volume, debug) &&
                     Vector3.Distance(WorkspaceGeometry.Center(volume), screenCenter) < 0.65f &&
                     WorkspaceGeometry.Center(volume).y < screenCenter.y)
                 {

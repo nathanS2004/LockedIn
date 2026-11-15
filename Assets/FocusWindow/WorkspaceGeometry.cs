@@ -8,7 +8,8 @@ namespace LockedIn
     {
         // Fit a physical surface to depth samples inside a detection, rather than a head-facing billboard.
         public static bool TryFit(Rect rect, bool keyboard, Func<Vector2, Ray> imageRay,
-                                  ScreenDepthSelection depth, out ScreenDepthSelection.ScreenVolume volume)
+                                  ScreenDepthSelection depth, out ScreenDepthSelection.ScreenVolume volume,
+                                  WorkspaceScanDebug debug = null)
         {
             var points = new List<Vector3>();
             for (int y = 0; y < 3; y++)
@@ -21,7 +22,9 @@ namespace LockedIn
                     Vector3.Distance(ray.origin, point) is > 0.18f and < 2.5f)
                     points.Add(point);
             }
-            return TryFitPoints(rect, keyboard, imageRay, points, out volume);
+            bool passed = TryFitPoints(rect, keyboard, imageRay, points, out volume);
+            debug?.Record($"depth fit ({(keyboard ? "keyboard/base" : "screen")}): {points.Count}/9 valid depth samples, passed={passed}");
+            return passed;
         }
 
         internal static bool TryFitPoints(Rect rect, bool keyboard, Func<Vector2, Ray> imageRay,

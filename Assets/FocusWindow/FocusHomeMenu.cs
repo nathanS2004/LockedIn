@@ -42,7 +42,7 @@ namespace LockedIn
 
         public bool IsOpen => panel.gameObject.activeSelf;
 
-        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder, Action autoSelect, Action detectWorkspace)
+        public FocusHomeMenu(Transform camera, Action<BackgroundStyle> choose, Action createBorder, Action autoSelect, Action detectWorkspace, Action debugWorkspace)
         {
             panel = CreateRect("LockedIn menu", camera, new Vector2(640, 450), Vector2.zero);
             panel.localPosition = new Vector3(0f, -0.025f, 1.1f);
@@ -67,7 +67,9 @@ namespace LockedIn
             AddItem(home, "Choose Background", new Vector2(556, 55), new Vector2(0, -92),
                     () => ExplainBackgrounds());
 
-            AddItem(home, "How to use LockedIn", new Vector2(556, 42), new Vector2(0, -148), StartWalkthrough);
+            AddItem(home, "How to use LockedIn", new Vector2(268, 42), new Vector2(-144, -148), StartWalkthrough);
+            AddItem(home, "Scan Debug", new Vector2(268, 42), new Vector2(144, -148),
+                () => Explain("Debug an AI scan", "Run the same AI scan with a frozen camera preview and detected boxes. Results are saved to a log on the headset. The frame stays in memory until you retry or leave.", "Start debug", debugWorkspace));
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);
@@ -117,6 +119,7 @@ namespace LockedIn
             knobStatusText = AddText(knobStatus, "Environment 0% | NO SIGNAL - CLEAR", knobStatus.sizeDelta,
                 Vector2.zero, 20, Muted, alignment: TextAnchor.MiddleCenter);
             BuildInstructions();
+            BuildScanDebug();
             if (PlayerPrefs.GetInt("LockedIn.Walkthrough.v2", 0) == 0) StartWalkthrough();
         }
 
@@ -195,6 +198,8 @@ namespace LockedIn
         {
             if (panel != null)
                 UnityEngine.Object.Destroy(panel.gameObject);
+            if (scanDebugPanel != null)
+                UnityEngine.Object.Destroy(scanDebugPanel.gameObject);
             if (calibration != null)
                 UnityEngine.Object.Destroy(calibration.gameObject);
             if (knobStatus != null)

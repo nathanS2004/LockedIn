@@ -8,7 +8,7 @@ namespace LockedIn
     // The provider is registered only after the optional camera and inference packages are installed.
     internal interface IWorkspaceDetector : IDisposable
     {
-        IEnumerator Detect(Ray aim, Action<string> status, Action<WorkspaceDetection> complete);
+        IEnumerator Detect(Ray aim, Action<string> status, Action<WorkspaceDetection> complete, WorkspaceScanDebug debug);
     }
 
     internal sealed class WorkspaceDetection

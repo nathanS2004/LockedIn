@@ -16,7 +16,10 @@ namespace LockedIn
         private IWorkspaceDetector workspaceDetector;
         private Coroutine workspaceScan;
 
-        private void BeginWorkspaceDetection()
+        private bool debugWorkspaceScan;
+        private WorkspaceScanDebug scanDebug;
+
+        private void BeginWorkspaceDetection(bool debug = false)
         {
             roomBlur?.Stop();
             CancelAutoSelection();
@@ -24,6 +27,7 @@ namespace LockedIn
             placingBorder = false;
             menu.Hide();
             selectingWorkspace = true;
+            debugWorkspaceScan = debug;
             waitingForWorkspacePermission = false;
             if (WorkspaceDetectorFactory.Create == null)
             {
@@ -92,6 +96,8 @@ namespace LockedIn
             }
             if (!pressed || !hasRay) return;
             workspacePreview = null;
+            ClearScanDebug();
+            if (debugWorkspaceScan) scanDebug = new WorkspaceScanDebug();
             try
             {
                 workspaceDetector?.Dispose();
@@ -110,15 +116,21 @@ namespace LockedIn
             yield return null;
             var stack = new Stack<IEnumerator>();
             stack.Push(workspaceDetector.Detect(aim,
-                text => menu.ShowCalibration(text, "Keep your head still. Grip cancels; B switches to manual."),
+                stage =>
+                {
+                    scanDebug?.Write(stage);
+                    menu.ShowCalibration(stage, "Keep your head still. Grip cancels; B switches to manual.");
+                },
                 result =>
                 {
                     workspacePreview = result != null && result.Volumes.Count > 0 ? result : null;
                     string title = result?.Message ?? "No workspace found";
+                    scanDebug?.Finish(title, result);
+                    menu.ShowScanDebug(scanDebug);
                     menu.ShowCalibration(title, workspacePreview == null
                         ? "Trigger to retry, B for manual. Keep the screen and keyboard in view."
                         : "A to keep these borders. Trigger to scan again; grip to cancel.");
-                }));
+                }, scanDebug));
             try
             {
                 while (stack.Count > 0)
@@ -158,6 +170,9 @@ namespace LockedIn
 
         private void WorkspaceFailed(Exception error)
         {
+            scanDebug?.Write(error.ToString());
+            scanDebug?.Finish("Exception: " + error.GetType().Name, null);
+            menu.ShowScanDebug(scanDebug);
             Debug.LogError("LockedIn AI scan failed: " + error, this);
             workspacePreview = null;
             workspaceScan = null;
@@ -166,13 +181,25 @@ namespace LockedIn
 
         private void CancelWorkspaceDetection()
         {
-            if (workspaceScan != null) StopCoroutine(workspaceScan);
+            if (workspaceScan != null)
+            {
+                scanDebug?.Write("canceled");
+                StopCoroutine(workspaceScan);
+            }
             workspaceScan = null;
             workspaceDetector?.Dispose();
             workspaceDetector = null;
             workspacePreview = null;
+            ClearScanDebug();
             if (selectingWorkspace) menu?.HideCalibration();
             selectingWorkspace = false;
+        }
+
+        private void ClearScanDebug()
+        {
+            menu?.ShowScanDebug(null);
+            scanDebug?.Dispose();
+            scanDebug = null;
         }
 
         private void OnApplicationPause(bool paused)
