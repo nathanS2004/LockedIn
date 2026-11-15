@@ -20,6 +20,9 @@ The knob controls photo/color opacity or Room Blur strength while keeping the ex
 
 Room Blur replaces Slate Blue. Valid camera/depth areas use real-image Gaussian blur; a soft camera-derived fill covers the remaining surroundings while the detected workspace stays clear. Peripheral fill is approximate. The five-page tutorial includes the potentiometer.
 
+Sundowner Overlook replaces the Passthrough background tile; Shanghai Bund replaces Forest Green. Right A bypass or knob minimum still restores the room. Both panoramas download through the existing asset-restoration script.
+See [panorama replacements and validation](docs/panorama-replacements.md) for asset credits, setup and remaining headset checks.
+
 ## Development log
 
 - [Session handoff and verification record](docs/devlog/2026-11-14-potentiometer-session-handoff.md)

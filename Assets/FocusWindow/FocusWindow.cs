@@ -378,7 +378,9 @@ namespace LockedIn
         {
             if (style != background) roomBlur?.Stop();
             string resource = style == BackgroundStyle.Library ? "library" :
-                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" : null;
+                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" :
+                style == BackgroundStyle.SundownerOverlook ? "sundowner_overlook" :
+                style == BackgroundStyle.ShanghaiBund ? "shanghai_bund" : null;
             if (style != background)
             {
                 var next = resource == null ? null : Resources.Load<Texture2D>("LockedIn/Backgrounds/" + resource);
@@ -405,10 +407,6 @@ namespace LockedIn
             switch (background)
             {
                 case BackgroundStyle.RoomBlur:
-                    opacity = 1f;
-                    break;
-                case BackgroundStyle.Forest:
-                    color = new Color32(28, 64, 52, 255);
                     opacity = 1f;
                     break;
             }

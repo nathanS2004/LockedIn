@@ -10,10 +10,11 @@ namespace LockedIn
         Passthrough,
         Dimmed,
         RoomBlur,
-        Forest,
+        ShanghaiBund,
         Library,
         Beach,
-        Meadow
+        Meadow,
+        SundownerOverlook
     }
 
     internal sealed partial class FocusHomeMenu : IDisposable
@@ -70,10 +71,10 @@ namespace LockedIn
 
             AddText(backgrounds, "Choose Background", new Vector2(556, 36), new Vector2(0, 110),
                     26, Muted, FontStyle.Bold);
-            var styles = new[] { BackgroundStyle.Passthrough, BackgroundStyle.Dimmed,
-                BackgroundStyle.RoomBlur, BackgroundStyle.Forest, BackgroundStyle.Library,
+            var styles = new[] { BackgroundStyle.SundownerOverlook, BackgroundStyle.Dimmed,
+                BackgroundStyle.RoomBlur, BackgroundStyle.ShanghaiBund, BackgroundStyle.Library,
                 BackgroundStyle.Beach, BackgroundStyle.Meadow };
-            var names = new[] { "Passthrough", "Dim Room", "Room Blur", "Forest Green",
+            var names = new[] { "Sundowner Overlook", "Dim Room", "Room Blur", "Shanghai Bund",
                 "Historic Library", "Sunrise Beach", "Sunny Meadow" };
             for (int i = 0; i < styles.Length; i++)
             {
@@ -84,7 +85,7 @@ namespace LockedIn
             }
             AddItem(backgrounds, "Back", new Vector2(268, 48), new Vector2(144, -98),
                     () => ShowBackgrounds(false));
-            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Nature: Poly Haven / CC0",
+            AddText(backgrounds, "Library: Waldyrious / CC BY-SA 4.0 (scaled)\ncreativecommons.org/licenses/by-sa/4.0 | Other photos: Poly Haven / CC0",
                 new Vector2(590, 42), new Vector2(0, -151), 13, Muted,
                 alignment: TextAnchor.MiddleCenter);
 
@@ -224,6 +225,9 @@ namespace LockedIn
             RectTransform rect = CreateRect(title, parent, size, position);
             Image surface = AddImage(rect, Card);
             Text label = AddText(rect, title, size - new Vector2(32, 0), Vector2.zero, 28, Ink, FontStyle.Bold);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 20;
+            label.resizeTextMaxSize = 28;
             items.Add(new MenuItem(title, surface, label, activate, style));
         }
 
