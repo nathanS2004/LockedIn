@@ -1,0 +1,65 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using LockedIn;
+
+internal static class WorkspaceGeometryChecks
+{
+    private static int checks;
+    private static void Check(bool result, string message)
+    {
+        if (!result) throw new Exception(message);
+        checks++;
+    }
+
+    public static int Main()
+    {
+        var laptop = new WorkspaceBox(63, 0.95f, new Rect(0.2f, 0.2f, 0.5f, 0.6f));
+        var duplicate = new WorkspaceBox(62, 0.7f, new Rect(0.21f, 0.21f, 0.5f, 0.6f));
+        var keyboard = new WorkspaceBox(66, 0.9f, new Rect(0.25f, 0.55f, 0.4f, 0.2f));
+        var weak = new WorkspaceBox(66, 0.2f, new Rect(0.1f, 0.1f, 0.2f, 0.2f));
+        var person = new WorkspaceBox(0, 0.99f, new Rect(0, 0, 1, 1));
+        var kept = WorkspaceBoxFilter.Suppress(new List<WorkspaceBox> { laptop, duplicate, keyboard, weak, person });
+        Check(kept.Count == 2 && kept[0].ClassId == 63 && kept[1].ClassId == 66,
+            "Keep nested keyboard, suppress duplicate screen, reject weak/irrelevant detections.");
+        Check(WorkspaceBoxFilter.Suppress(new List<WorkspaceBox>()).Count == 0, "Empty detection result.");
+        Check(WorkspaceBoxFilter.Suppress(new List<WorkspaceBox> {
+            new WorkspaceBox(66, float.NaN, new Rect(0.2f, 0.2f, 0.3f, 0.2f)) }).Count == 0, "Reject NaN confidence.");
+        Check(WorkspaceBoxFilter.Suppress(new List<WorkspaceBox> {
+            new WorkspaceBox(66, 0.8f, new Rect(float.NaN, 0, 0.3f, 0.2f)) }).Count == 0, "Reject NaN box.");
+
+        Func<Vector2, Ray> imageRay = uv => new Ray(new Vector3(0, 0.9f, 0),
+            new Vector3(uv.x - 0.5f, 0.5f - uv.y, 1));
+        Rect screenRect = new Rect(0.2f, 0.2f, 0.6f, 0.4f);
+        var screenPoints = SamplePlane(screenRect, imageRay, new Plane(Vector3.back, new Vector3(0, 0.9f, 1)));
+        Check(WorkspaceGeometry.TryFitPoints(screenRect, false, imageRay, screenPoints, out var screen), "Fit vertical screen.");
+        Check(!WorkspaceGeometry.TryFitPoints(screenRect, true, imageRay, screenPoints, out _), "Reject vertical keyboard.");
+        Check(Mathf.Abs(Vector3.Dot(screen.Right, screen.Up)) < 0.001f, "Screen axes orthogonal.");
+        Check(Mathf.Abs(WorkspaceGeometry.Center(screen).z - 1) < 0.01f, "Screen retains physical depth.");
+
+        Rect keyboardRect = new Rect(0.3f, 0.7f, 0.4f, 0.2f);
+        var keyboardPoints = SamplePlane(keyboardRect, imageRay, new Plane(Vector3.up, new Vector3(0, 0.65f, 0)));
+        Check(WorkspaceGeometry.TryFitPoints(keyboardRect, true, imageRay, keyboardPoints, out var board), "Fit horizontal keyboard.");
+        Check(!WorkspaceGeometry.TryFitPoints(keyboardRect, false, imageRay, keyboardPoints, out _), "Reject horizontal screen.");
+        Check(Mathf.Abs(WorkspaceGeometry.Center(board).y - 0.65f) < 0.01f, "Keyboard stays on table plane.");
+        keyboardPoints[0] += new Vector3(0, 0.4f, 0);
+        Check(WorkspaceGeometry.TryFitPoints(keyboardRect, true, imageRay, keyboardPoints, out _), "Tolerate one hand/depth outlier.");
+        Check(!WorkspaceGeometry.TryFitPoints(screenRect, false, imageRay, new List<Vector3> { Vector3.zero }, out _), "Reject insufficient depth.");
+        Console.WriteLine("PASS: " + checks + " workspace filtering and geometry checks.");
+        return 0;
+    }
+
+    private static List<Vector3> SamplePlane(Rect rect, Func<Vector2, Ray> ray, Plane plane)
+    {
+        var points = new List<Vector3>();
+        for (int y = 0; y < 3; y++)
+        for (int x = 0; x < 3; x++)
+        {
+            Vector2 uv = new Vector2(Mathf.Lerp(rect.xMin, rect.xMax, 0.2f + x * 0.3f),
+                Mathf.Lerp(rect.yMin, rect.yMax, 0.2f + y * 0.3f));
+            Ray r = ray(uv);
+            if (plane.Raycast(r, out float d)) points.Add(r.GetPoint(d));
+        }
+        return points;
+    }
+}

@@ -5,7 +5,7 @@ using UnityEngine.XR.ARFoundation;
 namespace LockedIn
 {
     [RequireComponent(typeof(Camera))]
-    public sealed class FocusWindow : MonoBehaviour
+    public sealed partial class FocusWindow : MonoBehaviour
     {
         [SerializeField] private Shader maskShader;
         [SerializeField] private ARRaycastManager raycasts;
@@ -81,7 +81,7 @@ namespace LockedIn
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
             screenSelection = new ScreenDepthSelection(raycasts);
-            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect);
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect, BeginWorkspaceDetection);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -109,6 +109,7 @@ namespace LockedIn
             adjust.Disable();
             openMenu.Disable();
             CancelAutoSelection();
+            CancelWorkspaceDetection();
             if (raycasts != null)
                 raycasts.enabled = false;
             menu?.Hide();
@@ -140,6 +141,7 @@ namespace LockedIn
         {
             if (openMenu.WasPressedThisFrame())
             {
+                CancelWorkspaceDetection();
                 if (selectingScreen)
                     CancelAutoSelection();
                 menu.Toggle(background);
@@ -159,6 +161,12 @@ namespace LockedIn
 
             if (reset.WasPressedThisFrame())
                 BeginBorder();
+
+            if (selectingWorkspace)
+            {
+                UpdateWorkspaceDetection(hasRay, pointerRay, pressed);
+                return;
+            }
 
             if (selectingScreen)
             {
@@ -191,6 +199,8 @@ namespace LockedIn
 
         private void BeginBorder()
         {
+            CancelWorkspaceDetection();
+            hasKeyboardWindow = false;
             CancelAutoSelection();
             menu.Hide();
             calibrationStep = 0;
@@ -202,6 +212,7 @@ namespace LockedIn
 
         private void BeginAutoSelect()
         {
+            CancelWorkspaceDetection();
             menu.Hide();
             placingBorder = false;
             selectingScreen = true;
@@ -272,6 +283,7 @@ namespace LockedIn
             }
 
             ScreenDepthSelection.ScreenVolume volume = result.Value;
+            hasKeyboardWindow = false;
             screenOrigin = volume.Origin;
             screenRight = volume.Right;
             screenUp = volume.Up;
@@ -361,8 +373,9 @@ namespace LockedIn
 
         private void RenderMask(bool showPreview, Vector3 probe, bool suppressBackground = false)
         {
+            bool review = selectingWorkspace && workspacePreview != null && workspacePreview.Volumes.Count > 0;
             bool showBackground = dimEnabled && !suppressBackground;
-            overlay.enabled = showBackground || showPreview;
+            overlay.enabled = showBackground || showPreview || review;
             if (!overlay.enabled)
                 return;
 
@@ -386,9 +399,20 @@ namespace LockedIn
             mask.SetVector("_WindowNormal", screenNormal);
             mask.SetVector("_WindowMin", windowMin);
             mask.SetVector("_WindowMax", windowMax);
+            mask.SetFloat("_Review", review ? 1f : 0f);
+            mask.SetFloat("_HasSecondWindow", hasKeyboardWindow ? 1f : 0f);
+            if (hasKeyboardWindow)
+                SetVolume("_Second", keyboardWindow);
+            if (review)
+            {
+                SetVolume("_Window", workspacePreview.Volumes[0]);
+                bool second = workspacePreview.Volumes.Count > 1;
+                mask.SetFloat("_HasSecondWindow", second ? 1f : 0f);
+                if (second) SetVolume("_Second", workspacePreview.Volumes[1]);
+            }
             mask.SetColor("_BackgroundColor", color);
             mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
-            mask.SetFloat("_HasWindow", windowPlaced ? 1f : 0f);
+            mask.SetFloat("_HasWindow", windowPlaced || review ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetVector("_Probe", probe);
         }
