@@ -12,10 +12,7 @@ Sunrise Beach: Umhlanga Sunrise, Poly Haven.
 https://polyhaven.com/a/umhlanga_sunrise
 https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/umhlanga_sunrise.jpg
 
-Sunny Meadow: Meadow 2, Poly Haven.
-https://polyhaven.com/a/meadow_2
-https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/meadow_2.jpg
-Both nature photos: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+Sunrise Beach license: CC0 https://creativecommons.org/publicdomain/zero/1.0/
 License statement: https://polyhaven.com/license
 
 Sundowner Overlook: Dario Barresi, Poly Haven.
@@ -27,6 +24,25 @@ https://polyhaven.com/a/shanghai_bund
 https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/shanghai_bund.jpg
 Both new environments: CC0 https://creativecommons.org/publicdomain/zero/1.0/
 
-All five are photographic 360x180 equirectangular still images, not generated art.
-Nature JPEG tone mapping is supplied by Poly Haven. Unity import caps width at
-4096 pixels, preserves 2:1 projection, uses sRGB and Android ASTC 6x6 compression.
+Secluded Beach: Poly Haven, CC0.
+https://polyhaven.com/a/secluded_beach
+https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/secluded_beach.jpg
+
+Deep Space: NASA/Goddard Space Flight Center Scientific Visualization Studio.
+Deep Star Maps, visualization by Ernie Wright and Tom Bridgman (2012).
+https://svs.gsfc.nasa.gov/3895/
+https://svs.gsfc.nasa.gov/vis/a000000/a003800/a003895/starmap_16k.jpg
+NASA media usage guidelines: https://www.nasa.gov/nasa-brand-center/images-and-media/
+Star-catalog visualization, not a photograph or a Poly Haven CC0 asset.
+No NASA endorsement is implied. Constellation overlays are not included.
+
+The six active panoramas use 2:1 full-sphere mapping. Poly Haven JPEGs are
+tone-mapped photographs imported at 4K with ASTC 6x6. The NASA star panorama
+uses the 16K JPEG source, imported at 8K with ASTC 4x4 to preserve star detail.
+
+Interface previews: resized 512x256 derivatives of the credited panoramas.
+The Library preview remains CC BY-SA 4.0; the gallery center-crops it.
+Fonts: Barlow and Barlow Condensed, Jeremy Tribby, SIL Open Font License 1.1.
+https://github.com/google/fonts/tree/main/ofl/barlow
+https://github.com/google/fonts/tree/main/ofl/barlowcondensed
+Full font licenses: Resources/LockedIn/Interface/Fonts/*-OFL.txt.

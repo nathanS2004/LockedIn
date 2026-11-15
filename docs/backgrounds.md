@@ -1,7 +1,8 @@
-# Photographic backgrounds
+# Panoramic backgrounds
 
 Choose Background now includes Sundowner Overlook (replacing Passthrough),
-Shanghai Bund (replacing Forest Green), Historic Library, Sunrise Beach, and Sunny Meadow.
+Shanghai Bund (replacing Forest Green), Secluded Beach (replacing Dim Room),
+Deep Space (replacing Sunny Meadow), Historic Library and Sunrise Beach.
 Refresh Unity, wait for texture imports, Build And Run, create/select a workspace,
 then open Choose Background. Before a workspace is selected the existing 45%
 opacity cap preserves room visibility; after selection the environment can replace
@@ -13,7 +14,8 @@ The focus-mask shader samples an equirectangular texture using the world-space
 view direction. Rotation reveals the photo naturally. Photos are monoscopic and
 have no translation parallax: they are not walkable 3D environments. Only the
 selected texture is loaded; switching releases the previous one. Original JPEGs
-are retained; Android imports are capped at 4K with ASTC 6x6. No runtime network.
+are retained; photo imports use 4K / ASTC 6x6, while NASA Deep Space uses an 8K /
+ASTC 4x4 import for star detail. No runtime network is needed for these images.
 
 Validation: runtime, optional AI backend and editor C# compilation passed with
 installed Unity assemblies/analyzers. JPEG decoding and 2:1 dimensions verified
@@ -50,9 +52,11 @@ https://polyhaven.com/a/sundowner_overlook
 Shanghai Bund: Greg Zaal, Poly Haven, CC0.
 https://polyhaven.com/a/shanghai_bund
 
-All five are photographic 360x180 equirectangular still images, not generated art.
+The current set has five photographic panoramas and NASA's full-sphere star
+visualization. Active assets and credits are listed in
+Resources/LockedIn/Backgrounds/Credits.txt. All use 2:1 spherical mapping.
 Nature JPEG tone mapping is supplied by Poly Haven. Unity import caps width at
 4096 pixels, preserves 2:1 projection, uses sRGB and Android ASTC 6x6 compression.
 
 ## Restoring assets from GitHub
-The large JPEGs are present in the working Unity project but are not stored in Git. Run `python Tools/download_backgrounds.py` from Windows to download all five, then refresh Unity. Credits are included in Resources and this document. Right A bypass and knob minimum retain access to the clear room even though the Passthrough menu tile was replaced.
+The large JPEGs are present in the working Unity project but are not stored in Git. Run `python Tools/download_backgrounds.py` from Windows to download all six active panoramas, then refresh Unity. Credits are included in Resources and this document. Right A bypass and knob minimum retain access to the clear room even though the Passthrough menu tile was replaced.
