@@ -16,6 +16,8 @@ Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home s
 
 ## Development log
 
+- [2026-11-15 — AI workspace selection prototype](docs/devlog/2026-11-15-ai-workspace-selection.md)
+
 - [2026-11-14 — Unity scene and Quest 3 USB setup](docs/devlog/2026-11-14-unity-scene-and-quest-usb.md)
 - [2026-11-14 — First Quest 3 launch](docs/devlog/2026-11-14-first-quest-launch.md)
 - [2026-11-14 — Native passthrough prototype](docs/devlog/2026-11-14-native-passthrough.md)
@@ -25,3 +27,9 @@ Build and run `Assets/Scenes/LockedInPassthrough.unity` on the Quest. The home s
 - [2026-11-14 — One-click screen selection](docs/devlog/2026-11-14-auto-screen-selection.md)
 
 Each milestone PR should document the steps taken, what was verified, and the next step. Record whether validation happened in Unity's Game tab or on the headset.
+
+## AI screen and keyboard selection
+
+Run **LockedIn > Set Up AI Workspace Detection** in Unity once, wait for package imports and compilation, then Build and Run. On Quest choose **Detect Workspace (AI)**, grant camera/scene access, aim at the screen with both screen and keyboard in view, and pull the trigger. **A** confirms the preview, trigger rescans, **B** starts manual placement, and right grip cancels. Separate clear regions remain fixed in the room until the next scan.
+
+This optional prototype uses Meta's pretrained YOLOv9 sample locally on the headset. The model and required packages must be downloaded by the Unity setup command. Headset validation of this new path is pending. See the [implementation and verification log](docs/devlog/2026-11-15-ai-workspace-selection.md) for limitations and reproducible checks.

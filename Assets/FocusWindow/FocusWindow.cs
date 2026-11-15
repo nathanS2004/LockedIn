@@ -5,7 +5,7 @@ using UnityEngine.XR.ARFoundation;
 namespace LockedIn
 {
     [RequireComponent(typeof(Camera))]
-    public sealed class FocusWindow : MonoBehaviour
+    public sealed partial class FocusWindow : MonoBehaviour
     {
         [SerializeField] private Shader maskShader;
         [SerializeField] private ARRaycastManager raycasts;
@@ -34,6 +34,7 @@ namespace LockedIn
 
         private readonly InputAction openMenu = new InputAction(type: InputActionType.Button, binding: RightHand + "grip");
         private FocusHomeMenu menu;
+        private Texture2D panorama;
         private BackgroundStyle background = BackgroundStyle.Dimmed;
         private bool placingBorder;
 
@@ -81,7 +82,7 @@ namespace LockedIn
             overlay.receiveShadows = false;
             mask = new Material(maskShader) { renderQueue = 2990 };
             screenSelection = new ScreenDepthSelection(raycasts);
-            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect);
+            menu = new FocusHomeMenu(transform, SelectBackground, BeginBorder, BeginAutoSelect, BeginWorkspaceDetection);
             overlay.sharedMaterial = mask;
             overlay.enabled = false;
         }
@@ -109,6 +110,7 @@ namespace LockedIn
             adjust.Disable();
             openMenu.Disable();
             CancelAutoSelection();
+            CancelWorkspaceDetection();
             if (raycasts != null)
                 raycasts.enabled = false;
             menu?.Hide();
@@ -128,6 +130,7 @@ namespace LockedIn
             adjust.Dispose();
             openMenu.Dispose();
             menu?.Dispose();
+            if (panorama != null) Resources.UnloadAsset(panorama);
             if (overlay != null)
                 Destroy(overlay.gameObject);
             if (mask != null)
@@ -140,6 +143,7 @@ namespace LockedIn
         {
             if (openMenu.WasPressedThisFrame())
             {
+                CancelWorkspaceDetection();
                 if (selectingScreen)
                     CancelAutoSelection();
                 menu.Toggle(background);
@@ -159,6 +163,12 @@ namespace LockedIn
 
             if (reset.WasPressedThisFrame())
                 BeginBorder();
+
+            if (selectingWorkspace)
+            {
+                UpdateWorkspaceDetection(hasRay, pointerRay, pressed);
+                return;
+            }
 
             if (selectingScreen)
             {
@@ -191,17 +201,20 @@ namespace LockedIn
 
         private void BeginBorder()
         {
+            CancelWorkspaceDetection();
+            hasKeyboardWindow = false;
             CancelAutoSelection();
             menu.Hide();
             calibrationStep = 0;
             windowPlaced = false;
             dimEnabled = false;
             placingBorder = true;
-            menu.ShowCalibration("1 / 3   Top-left of the screen", "Line up the cyan dot with the corner and pull the trigger.");
+            menu.ShowCalibration("1 / 3   Top-left of the screen", "Move the controller close to this corner. Right trigger records the cyan dot.");
         }
 
         private void BeginAutoSelect()
         {
+            CancelWorkspaceDetection();
             menu.Hide();
             placingBorder = false;
             selectingScreen = true;
@@ -272,6 +285,7 @@ namespace LockedIn
             }
 
             ScreenDepthSelection.ScreenVolume volume = result.Value;
+            hasKeyboardWindow = false;
             screenOrigin = volume.Origin;
             screenRight = volume.Right;
             screenUp = volume.Up;
@@ -301,7 +315,7 @@ namespace LockedIn
                 case 0:
                     screenOrigin = point;
                     calibrationStep = 1;
-                    menu.ShowCalibration("2 / 3   Top-right of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    menu.ShowCalibration("2 / 3   Top-right of the screen", "Move the controller to this corner. Right trigger records the cyan dot.");
                     break;
                 case 1:
                     Vector3 topEdge = point - screenOrigin;
@@ -315,7 +329,7 @@ namespace LockedIn
                     screenRight = topEdge / width;
                     windowMax.x = width + BorderPadding;
                     calibrationStep = 2;
-                    menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Line up the dot with the next corner and pull the trigger.");
+                    menu.ShowCalibration("3 / 3   Bottom-left of the screen", "Move the controller to this corner. Right trigger records the cyan dot.");
                     break;
                 case 2:
                     Vector3 side = Vector3.ProjectOnPlane(point - screenOrigin, screenRight);
@@ -332,7 +346,7 @@ namespace LockedIn
                     windowMax.y = BorderPadding;
                     windowMax.z = BorderPadding;
                     calibrationStep = 3;
-                    menu.ShowCalibration("Include the keyboard?", "Trigger at the front of the keyboard, or press A for screen only.");
+                    menu.ShowCalibration("Include the keyboard?", "Move the cyan dot to the keyboard front edge + right trigger. Right A: screen only.");
                     break;
                 case 3:
                     Vector3 delta = point - screenOrigin;
@@ -355,14 +369,29 @@ namespace LockedIn
 
         private void SelectBackground(BackgroundStyle style)
         {
+            string resource = style == BackgroundStyle.Library ? "library" :
+                style == BackgroundStyle.Beach ? "beach" : style == BackgroundStyle.Meadow ? "meadow" : null;
+            if (style != background)
+            {
+                var next = resource == null ? null : Resources.Load<Texture2D>("LockedIn/Backgrounds/" + resource);
+                if (resource != null && next == null)
+                {
+                    Debug.LogError("LockedIn: panorama missing: " + resource);
+                    return;
+                }
+                mask.SetTexture("_Panorama", next);
+                if (panorama != null && panorama != next) Resources.UnloadAsset(panorama);
+                panorama = next;
+            }
             background = style;
             dimEnabled = style != BackgroundStyle.Passthrough;
         }
 
         private void RenderMask(bool showPreview, Vector3 probe, bool suppressBackground = false)
         {
+            bool review = selectingWorkspace && workspacePreview != null && workspacePreview.Volumes.Count > 0;
             bool showBackground = dimEnabled && !suppressBackground;
-            overlay.enabled = showBackground || showPreview;
+            overlay.enabled = showBackground || showPreview || review;
             if (!overlay.enabled)
                 return;
 
@@ -386,9 +415,22 @@ namespace LockedIn
             mask.SetVector("_WindowNormal", screenNormal);
             mask.SetVector("_WindowMin", windowMin);
             mask.SetVector("_WindowMax", windowMax);
+            mask.SetFloat("_Review", review ? 1f : 0f);
+            mask.SetFloat("_HasSecondWindow", hasKeyboardWindow ? 1f : 0f);
+            if (hasKeyboardWindow)
+                SetVolume("_Second", keyboardWindow);
+            if (review)
+            {
+                SetVolume("_Window", workspacePreview.Volumes[0]);
+                bool second = workspacePreview.Volumes.Count > 1;
+                mask.SetFloat("_HasSecondWindow", second ? 1f : 0f);
+                if (second) SetVolume("_Second", workspacePreview.Volumes[1]);
+            }
+            if (panorama != null) opacity = 1f;
+            mask.SetFloat("_UsePanorama", panorama != null ? 1f : 0f);
             mask.SetColor("_BackgroundColor", color);
             mask.SetFloat("_Dimming", showBackground ? (windowPlaced ? opacity : Mathf.Min(opacity, 0.45f)) : 0f);
-            mask.SetFloat("_HasWindow", windowPlaced ? 1f : 0f);
+            mask.SetFloat("_HasWindow", windowPlaced || review ? 1f : 0f);
             mask.SetFloat("_Preview", showPreview ? 1f : 0f);
             mask.SetVector("_Probe", probe);
         }
